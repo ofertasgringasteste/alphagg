@@ -12,7 +12,8 @@
     "node": ">=20.x"
   },
   "dependencies": {
-    "vercel-php": "^0.6.2"
+    "vercel-php": "^0.6.2",
+    "better-sqlite3": "^9.2.2"
   }
 }
 
