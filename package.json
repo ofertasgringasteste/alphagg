@@ -11,7 +11,7 @@
     "node": ">=18.x"
   },
   "dependencies": {
-    "@vercel/php": "^0.6.0"
+    "vercel-php": "^0.6.0"
   }
 }
 
