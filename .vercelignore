@@ -1,0 +1,37 @@
+# Arquivos e diretórios a serem ignorados pelo Vercel
+
+# Logs
+*.log
+api/logs/
+**/logs/
+
+# Bancos de dados
+*.sqlite
+*.sqlite3
+*.db
+api/database.sqlite
+api/checkout/database.sqlite
+
+# Arquivos de transação
+api/transactions/
+**/transactions/
+
+# Arquivos de backup
+.archive/
+backup/
+
+# Arquivos de desenvolvimento
+php.ini
+.DS_Store
+Thumbs.db
+
+# Arquivos de configuração local
+.env.local
+.env.development
+
+# Arquivos temporários
+tmp/
+temp/
+*.bak
+*.backup
+
