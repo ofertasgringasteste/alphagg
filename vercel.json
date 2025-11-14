@@ -17,21 +17,18 @@
   "routes": [
     {
       "src": "/api/checkout/abyssalpay-pagamento.php",
-      "dest": "/api/checkout/abyssalpay-pagamento.php",
-      "methods": ["GET", "POST", "OPTIONS"]
+      "dest": "/api/checkout/abyssalpay-pagamento.php"
     },
     {
       "src": "/api/checkout/verificar.php",
-      "dest": "/api/checkout/verificar.php",
-      "methods": ["GET", "POST", "OPTIONS"]
+      "dest": "/api/checkout/verificar.php"
     },
     {
       "src": "/api/abyssalpay-webhook.php",
-      "dest": "/api/abyssalpay-webhook.php",
-      "methods": ["GET", "POST", "OPTIONS"]
+      "dest": "/api/abyssalpay-webhook.php"
     },
     {
-      "src": "/api/(.*)",
+      "src": "/api/(.*\\.php)$",
       "dest": "/api/$1"
     },
     {
