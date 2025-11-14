@@ -1,20 +1,6 @@
 {
   "version": 2,
   "outputDirectory": ".",
-  "rewrites": [
-    {
-      "source": "/api/checkout/abyssalpay-pagamento.js",
-      "destination": "/api/checkout/abyssalpay-pagamento.js"
-    },
-    {
-      "source": "/api/checkout/verificar.js",
-      "destination": "/api/checkout/verificar.js"
-    },
-    {
-      "source": "/api/abyssalpay-webhook.js",
-      "destination": "/api/abyssalpay-webhook.js"
-    }
-  ],
   "headers": [
     {
       "source": "/api/(.*)",
