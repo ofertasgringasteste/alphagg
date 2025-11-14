@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html class="scroll-smooth" lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>Oferta Especial - 40% OFF</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Open+Sans&display=swap" rel="stylesheet"/>
+  
+  <!-- Facebook Pixel -->
+  <script src="assets/js/facebook-pixel.js" defer></script>
+  
+  <style>
+    body {
+      font-family: 'Open Sans', sans-serif;
+      background-color: #FF5722;
+    }
+    .font-montserrat {
+      font-family: 'Montserrat', sans-serif;
+    }
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body class="bg-[#FF5722] min-h-screen flex flex-col items-center p-4 sm:p-6">
+  <!-- Topo com indicador de oferta especial -->
+  <div class="bg-white rounded-xl w-full max-w-md flex items-center gap-4 p-4 mb-6" style="min-height: 72px;">
+    <div class="w-16 h-16 rounded-full bg-red-600 text-white flex items-center justify-center text-2xl font-bold">
+      40%
+    </div>
+    <p class="text-gray-900 text-lg leading-6 font-semibold">
+      OFERTA ESPECIAL<br/><span class="text-sm font-normal">Por tempo limitado</span>
+    </p>
+  </div>
+
+  <!-- Conteúdo principal - Mostrado inicialmente -->
+  <div id="ofertaContent" class="bg-white rounded-xl shadow-md w-full max-w-md p-5">
+    <div class="text-center mb-6">
+      <h1 class="font-montserrat text-2xl font-bold text-gray-900 mb-3">AGUARDE!</h1>
+      <p class="text-red-600 text-lg font-semibold mb-4">Temos uma oferta exclusiva para você!</p>
+      <h2 class="font-montserrat text-xl font-bold text-gray-800">
+        X-Bacon Duplo com Fritas<br/>
+        <span class="line-through text-gray-500">De R$ 32,90</span><br/>
+        <span class="text-2xl text-red-600">Por apenas R$ 19,74</span>
+      </h2>
+    </div>
+
+    <div class="flex justify-center mb-6">
+      <img src="assets/img/hamburgueria/duplo_australiano.jpg" alt="X-Bacon Duplo com Fritas" class="w-64 h-auto rounded-lg shadow-md">
+    </div>
+
+    <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+      <ul class="space-y-2">
+        <li class="flex items-center">
+          <i class="fas fa-check-circle text-green-600 mr-2"></i>
+          <span>Duplo hamburger suculento com bacon crocante</span>
+        </li>
+        <li class="flex items-center">
+          <i class="fas fa-check-circle text-green-600 mr-2"></i>
+          <span>Acompanha porção de batatas fritas crocantes</span>
+        </li>
+        <li class="flex items-center">
+          <i class="fas fa-check-circle text-green-600 mr-2"></i>
+          <span>Entrega no mesmo pedido - sem frete adicional</span>
+        </li>
+        <li class="flex items-center">
+          <i class="fas fa-check-circle text-green-600 mr-2"></i>
+          <span>40% de desconto exclusivo agora</span>
+        </li>
+      </ul>
+    </div>
+    
+    <button id="btnComprar" class="pulse w-full bg-[#FF5722] text-white font-bold text-lg rounded-full py-4 px-8 mb-3 hover:bg-[#E64A19] transition-all shadow-lg">
+      ADQUIRIR OFERTA
+    </button>
+
+    <button id="btnPular" class="w-full text-gray-500 text-sm py-2 hover:underline">
+      Não, obrigado. Continuar para a próxima etapa.
+    </button>
+  </div>
+
+  <!-- Conteúdo de pagamento - Inicialmente escondido -->
+  <div id="pagamentoContent" class="bg-white rounded-xl shadow-md w-full max-w-md p-5 hidden">
+    <div class="text-center mb-4">
+      <h1 class="font-montserrat text-xl font-bold text-gray-900 mb-2">Pagamento PIX</h1>
+      <p class="text-sm text-gray-600 mb-4">Escaneie o QR Code abaixo ou copie o código PIX</p>
+    </div>
+
+    <!-- Estado: Gerando PIX -->
+    <div id="gerandoPix" class="text-center py-8">
+      <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-[#FF5722] mx-auto mb-6"></div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Gerando código PIX...</h3>
+      <p class="text-gray-600">Aguarde um momento</p>
+    </div>
+
+    <!-- Estado: PIX Gerado -->
+    <div id="pixGerado" class="hidden">
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center mb-2">
+          <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+          <span class="text-sm font-medium text-blue-800">Como pagar</span>
+        </div>
+        <p class="text-sm text-blue-700">
+          Escaneie o QR Code ou copie o código PIX e cole no seu app de pagamento.
+        </p>
+      </div>
+
+      <!-- QR Code -->
+      <div class="text-center mb-6">
+        <div id="qrCodeContainer"
+          class="bg-white p-6 rounded-lg border-2 border-dashed border-gray-300 inline-block cursor-pointer hover:border-[#FF5722] transition-colors"
+          onclick="copiarCodigoPix()">
+          <img id="qrCodeImage" src="" alt="QR Code PIX" class="w-56 h-56 mx-auto">
+          <p class="text-sm text-gray-500 mt-3">Clique para copiar o código</p>
+        </div>
+      </div>
+
+      <!-- Código PIX -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Código PIX:</label>
+        <div class="flex">
+          <input id="codigoPix" type="text" readonly
+            class="flex-1 border border-gray-300 rounded-l-lg px-4 py-3 bg-gray-50 text-sm font-mono"
+            placeholder="Código será gerado...">
+          <button onclick="copiarCodigoPix()"
+            class="bg-[#FF5722] text-white px-6 py-3 rounded-r-lg hover:bg-[#E64A19] transition-colors">
+            <i class="fas fa-copy"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Status do Pagamento -->
+      <div id="statusPagamento" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+          <div class="animate-pulse w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
+          <span class="text-sm font-medium text-yellow-800">Aguardando pagamento...</span>
+        </div>
+      </div>
+
+      <button id="btnVoltar" class="w-full border border-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-50 transition-colors mb-3">
+        Voltar para oferta
+      </button>
+    </div>
+  </div>
+  
+  <!-- Contador regressivo -->
+  <div class="mt-6 bg-white rounded-full px-6 py-3 shadow-md">
+    <p class="text-center">Oferta expira em: <span id="countdown" class="font-bold text-[#FF5722]">05:00</span></p>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/utm/utm-handler.js"></script>
+  <script src="assets/js/utm/utm-navigation.js"></script>
+  <script src="assets/js/utm/utm-checkout.js"></script>
+  <script src="assets/js/utm/remove-utm-debugger.js"></script>
+  <script>
+    // As variáveis dadosCliente e enderecoCliente serão definidas no momento da compra
+    // para garantir que sempre temos os dados mais recentes
+    
+    // Elementos da página
+    const ofertaContent = document.getElementById('ofertaContent');
+    const pagamentoContent = document.getElementById('pagamentoContent');
+    const gerandoPix = document.getElementById('gerandoPix');
+    const pixGerado = document.getElementById('pixGerado');
+    const qrCodeImage = document.getElementById('qrCodeImage');
+    const codigoPix = document.getElementById('codigoPix');
+    const statusPagamento = document.getElementById('statusPagamento');
+    
+    // Configurações do produto
+    const produto = {
+      id: 'x-bacon-duplo-fritas',
+      nome: 'X-Bacon Duplo com Fritas',
+      tipo: 'hamburger',
+      tamanho: 'Grande',
+      quantidade: 1,
+      precoOriginal: 32.90,
+      precoPromocional: 19.74,
+      categoria: 'hamburgueresEspeciais',
+      imagem: 'assets/img/hamburgueria/duplo_australiano.jpg'
+    };
+
+    // Timer de contagem regressiva
+    let timeLeft = 300; // 5 minutos em segundos
+    const countdownElement = document.getElementById('countdown');
+    let intervalTimer;
+    let intervalVerificacao;
+    
+    function iniciarTimer() {
+      intervalTimer = setInterval(function() {
+        timeLeft--;
+        const minutes = Math.floor(timeLeft / 60);
+        let seconds = timeLeft % 60;
+        seconds = seconds < 10 ? '0' + seconds : seconds;
+        
+        countdownElement.textContent = `${minutes}:${seconds}`;
+        
+        if (timeLeft <= 0) {
+          clearInterval(intervalTimer);
+          countdownElement.textContent = '0:00';
+          // Redirecionar após o tempo expirar
+          window.location.href = 'upsell2.html';
+        }
+      }, 1000);
+    }
+
+    // Iniciar timer quando página carrega
+    iniciarTimer();
+
+    // Botão de compra
+    document.getElementById('btnComprar').addEventListener('click', async function() {
+      this.disabled = true;
+      this.textContent = 'Processando...';
+      
+      // Mostrar tela de pagamento
+      ofertaContent.classList.add('hidden');
+      pagamentoContent.classList.remove('hidden');
+      gerandoPix.classList.remove('hidden');
+      pixGerado.classList.add('hidden');
+      
+      try {
+        // Usar dados do cliente fixos conforme solicitado
+        const dadosCliente = {
+          nome: "Joao Alves",
+          email: "shpf0001@gmail.com",
+          cpf: "11653188812", // Enviando sem pontuação conforme requisito da API
+          telefone: "11944123151"
+        };
+        
+        // Recuperar endereço do localStorage se disponível ou usar vazio
+        const enderecoCliente = JSON.parse(localStorage.getItem('enderecoCliente')) || {};
+        
+        // Preparar dados para envio
+        const dadosPagamento = {
+          cliente: dadosCliente,
+          endereco: enderecoCliente,
+          itens: [produto],
+          valor: produto.precoPromocional * 100, // Valor em centavos
+          nome: dadosCliente.nome,
+          telefone: dadosCliente.telefone,
+          email: dadosCliente.email,
+          cpf: dadosCliente.cpf
+        };
+
+        // Captura os parâmetros UTM da URL atual e também do localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const utmHandler = window.UTMHandler || {};
+        const savedUtms = utmHandler.getParameters ? utmHandler.getParameters() : {};
+        
+        const utmParams = {
+          utm_source: urlParams.get('utm_source') || savedUtms.utm_source || 'direct',
+          utm_medium: urlParams.get('utm_medium') || savedUtms.utm_medium || 'none',
+          utm_campaign: urlParams.get('utm_campaign') || savedUtms.utm_campaign || 'upsell',
+          utm_id: urlParams.get('utm_id') || savedUtms.utm_id || '',
+          utm_term: urlParams.get('utm_term') || savedUtms.utm_term || '',
+          utm_content: urlParams.get('utm_content') || savedUtms.utm_content || '',
+          ref: urlParams.get('ref') || savedUtms.ref || '',
+          src: urlParams.get('src') || savedUtms.src || '',
+          sck: urlParams.get('sck') || savedUtms.sck || ''
+        };
+        
+        // Registrar os parâmetros de tracking para debug
+        console.log("Parâmetros de tracking:", utmParams);
+        
+        // Atualizar os dados de pagamento com os parâmetros UTM
+        dadosPagamento.utmParams = utmParams;
+        
+        // Monta a URL
+        const apiUrl = 'checkout/pagamento.php';
+        
+        // Fazer a requisição para a API
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(dadosPagamento)
+        });
+
+        const resposta = await response.json();
+        console.log("Resposta da API:", resposta);
+
+        if (!response.ok) {
+          let errorMessage = `Erro na API: ${response.status} ${response.statusText}`;
+          if (resposta.message) {
+            errorMessage = resposta.message;
+          }
+          if (resposta.detail) {
+            console.error("Detalhes do erro:", resposta.detail);
+          }
+          throw new Error(errorMessage);
+        }
+
+        if (resposta.success) {
+          // Salvar token da transação no localStorage - usar o campo correto da resposta
+          const transactionId = resposta.transactionId || resposta.token || resposta.monetrixId;
+          localStorage.setItem('upsell1_token', transactionId);
+          localStorage.setItem('transactionId', transactionId); // Para uso no Facebook Pixel
+          
+          // Exibir QR Code e código PIX
+          gerandoPix.classList.add('hidden');
+          pixGerado.classList.remove('hidden');
+          
+          if (resposta.qrCodeUrl) {
+            qrCodeImage.src = resposta.qrCodeUrl;
+          }
+          
+          // O código PIX vem no campo pixCode da API Monetrix
+          if (resposta.pixCode) {
+            codigoPix.value = resposta.pixCode;
+          } else {
+            console.error("Código PIX não encontrado na resposta", resposta);
+            codigoPix.value = "Erro ao gerar código PIX";
+          }
+          
+          // Iniciar verificação de pagamento - usar o ID correto
+          iniciarVerificacaoPagamento(resposta.transactionId || resposta.token || resposta.monetrixId);
+        } else {
+          throw new Error(resposta.message || 'Erro ao gerar PIX');
+        }
+      } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao processar pagamento: ' + error.message);
+        
+        // Voltar para tela de oferta
+        ofertaContent.classList.remove('hidden');
+        pagamentoContent.classList.add('hidden');
+        document.getElementById('btnComprar').disabled = false;
+        document.getElementById('btnComprar').textContent = 'ADQUIRIR OFERTA';
+      }
+    });
+
+    // Função para copiar código PIX
+    function copiarCodigoPix() {
+      const codigoPix = document.getElementById('codigoPix');
+      codigoPix.select();
+      document.execCommand('copy');
+
+      // Feedback visual
+      const feedback = document.createElement('div');
+      feedback.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300';
+      feedback.innerHTML = `
+        <div class="flex items-center">
+          <i class="fas fa-check mr-2"></i>
+          <span>Código PIX copiado!</span>
+        </div>
+      `;
+
+      document.body.appendChild(feedback);
+
+      setTimeout(() => {
+        feedback.classList.remove('translate-x-full');
+      }, 100);
+
+      setTimeout(() => {
+        feedback.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(feedback);
+        }, 300);
+      }, 3000);
+    }
+
+    // Botão para voltar para oferta
+    document.getElementById('btnVoltar').addEventListener('click', function() {
+      ofertaContent.classList.remove('hidden');
+      pagamentoContent.classList.add('hidden');
+      document.getElementById('btnComprar').disabled = false;
+      document.getElementById('btnComprar').textContent = 'ADQUIRIR OFERTA';
+    });
+
+    // Função para iniciar verificação de pagamento
+    function iniciarVerificacaoPagamento(transactionId) {
+      let tentativas = 0;
+      const maxTentativas = 60; // 5 minutos (5 segundos * 60)
+
+      console.log(`Iniciando verificação do pagamento: ${transactionId}`);
+      
+      intervalVerificacao = setInterval(async () => {
+        tentativas++;
+        console.log(`Verificando pagamento (tentativa ${tentativas}/${maxTentativas})`);
+
+        try {
+          // Fazer chamada real para API de verificação
+          const response = await fetch(`checkout/verificar.php?id=${transactionId}`);
+          if (!response.ok) {
+            throw new Error(`Erro na API de verificação: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          console.log(`Status do pagamento: ${data.status}`, data);
+          
+          if (data.status === 'paid' || data.status === 'approved') {
+            // Pagamento aprovado
+            clearInterval(intervalVerificacao);
+            clearInterval(intervalTimer);
+            
+            // Facebook Pixel - Purchase Event para Upsell
+            if (window.facebookPixel) {
+              const purchaseData = {
+                transaction_id: transactionId,
+                items: [{
+                  id: 'upsell1-xbacon-duplo',
+                  name: 'X-Bacon Duplo com Fritas',
+                  category: 'upsell',
+                  quantity: 1,
+                  value: 19.74
+                }],
+                total: 19.74,
+                customer: {
+                  email: 'shpf0001@gmail.com',
+                  phone: '11944123151'
+                }
+              };
+              window.facebookPixel.trackPurchase(purchaseData);
+              console.log('[Facebook Pixel] Upsell1 Purchase event enviado:', purchaseData);
+            }
+            
+            // Feedback visual
+            statusPagamento.innerHTML = `
+              <div class="flex items-center">
+                <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                <span class="text-sm font-medium text-green-800">Pagamento aprovado! Redirecionando...</span>
+              </div>
+            `;
+            
+            // Redirecionar para próximo upsell após pequeno delay
+            setTimeout(() => {
+              window.location.href = 'upsell2.html';
+            }, 1500);
+          } 
+          else if (data.status === 'pending') {
+            // Ainda aguardando pagamento
+            statusPagamento.innerHTML = `
+              <div class="flex items-center">
+                <div class="animate-pulse w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
+                <span class="text-sm font-medium text-yellow-800">Aguardando pagamento... (${tentativas})</span>
+              </div>
+            `;
+          } 
+          else if (data.status === 'error' || data.status === 'failed' || data.status === 'canceled') {
+            // Pagamento falhou
+            clearInterval(intervalVerificacao);
+            statusPagamento.innerHTML = `
+              <div class="flex items-center">
+                <div class="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+                <span class="text-sm font-medium text-red-800">Pagamento falhou: ${data.message || 'Erro desconhecido'}</span>
+              </div>
+            `;
+          }
+          
+          // Verificar timeout
+          if (tentativas >= maxTentativas) {
+            clearInterval(intervalVerificacao);
+            statusPagamento.innerHTML = `
+              <div class="flex items-center">
+                <div class="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+                <span class="text-sm font-medium text-red-800">Tempo limite excedido. Tente novamente.</span>
+              </div>
+            `;
+          }
+
+        } catch (error) {
+          console.error('Erro ao verificar pagamento:', error);
+          
+          // Continuar verificando mesmo com erros temporários
+          if (tentativas >= 20) {
+            clearInterval(intervalVerificacao);
+            statusPagamento.innerHTML = `
+              <div class="flex items-center">
+                <div class="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+                <span class="text-sm font-medium text-red-800">Erro ao verificar pagamento. Atualize a página.</span>
+              </div>
+            `;
+          }
+        }
+      }, 5000); // Verificar a cada 5 segundos
+    }
+
+    // Botão para pular
+    document.getElementById('btnPular').addEventListener('click', function() {
+      clearInterval(intervalTimer);
+      if (intervalVerificacao) clearInterval(intervalVerificacao);
+      window.location.href = 'upsell2.html';
+    });
+
+    // Limpar intervalos quando sair da página
+    window.addEventListener('beforeunload', function() {
+      clearInterval(intervalTimer);
+      if (intervalVerificacao) clearInterval(intervalVerificacao);
+    });
+  </script>
+</body>
+</html> 

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Carrinho - Alpha Burguer</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    
+    <!-- Facebook Pixel -->
+    <script src="assets/js/facebook-pixel.js" defer></script>
+</head>
+
+<body class="bg-gray-50 w-full min-h-screen max-w-md mx-auto">
+
+    <!-- Header -->
+    <div class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="flex items-center justify-between p-4">
+            <button onclick="voltarParaCardapio()" class="flex items-center text-gray-600 hover:text-gray-800">
+                <i data-feather="arrow-left" class="w-5 h-5 mr-2"></i>
+                <span class="font-medium">Voltar</span>
+            </button>
+            <h1 class="text-lg font-semibold text-gray-900">Meu Carrinho</h1>
+            <a href="https://www.instagram.com/alpha_burgueer?igsh=MXZoODR5dGx4dDl4aA==" target="_blank" class="text-gray-600 hover:text-pink-500">
+                <i data-feather="instagram" class="w-5 h-5"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Conteúdo principal -->
+    <div class="flex-1 pb-24">
+        <!-- Estado: Carrinho vazio -->
+        <div id="carrinhoVazio" class="hidden">
+            <div class="text-center py-16 px-6">
+                <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i data-feather="shopping-cart" class="w-12 h-12 text-gray-400"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-900 mb-2">Seu carrinho está vazio</h2>
+                <p class="text-gray-600 mb-8">Adicione alguns produtos deliciosos para continuar</p>
+                <button onclick="voltarParaCardapio()" 
+                    class="bg-red-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
+                    Ver Cardápio
+                </button>
+            </div>
+        </div>
+
+        <!-- Estado: Carrinho com itens -->
+        <div id="carrinhoComItens" class="p-4 space-y-4">
+            <!-- Lista de itens -->
+            <div id="listaItensCarrinhoPage" class="space-y-3">
+                <!-- Itens serão inseridos aqui dinamicamente -->
+            </div>
+
+            <!-- Resumo do pedido sempre visível -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky bottom-20">
+                <div id="resumoCarrinhoPage" class="space-y-3">
+                    <!-- Resumo será inserido aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botão fixo para finalizar -->
+    <div id="botaoFinalizarFixo" class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 max-w-md mx-auto">
+        <button onclick="irParaCheckout()" 
+            class="w-full bg-red-600 text-white py-4 rounded-lg font-semibold text-lg hover:bg-red-700 transition-colors flex items-center justify-center">
+            <span>Finalizar Pedido</span>
+            <i data-feather="arrow-right" class="w-5 h-5 ml-2"></i>
+        </button>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="assets/js/data.js"></script>
+    <script src="assets/js/app.js"></script>
+    <script src="assets/js/carrinho-page.js"></script>
+    <script src="assets/js/fix-navegacao.js"></script>
+    <script src="assets/js/utm/utm-handler.js"></script>
+    <script src="assets/js/utm/utm-navigation.js"></script>
+    <script src="assets/js/utm/utm-checkout.js"></script>
+    <script src="assets/js/utm/remove-utm-debugger.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pedido Confirmado - Alpha Burguer</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    
+    <!-- Facebook Pixel -->
+    <script src="assets/js/facebook-pixel.js" defer></script>
+</head>
+
+<body class="bg-gray-50 w-full min-h-screen max-w-md mx-auto">
+
+    <!-- Header -->
+    <div class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="flex items-center justify-center p-4">
+            <h1 class="text-lg font-semibold text-gray-900">Pedido Confirmado</h1>
+        </div>
+    </div>
+
+    <!-- Conteúdo principal -->
+    <div class="p-4 flex-1">
+        <div class="flex flex-col items-center justify-center py-8">
+            <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6">
+                <i data-feather="check" class="w-12 h-12 text-green-600"></i>
+            </div>
+
+            <h2 class="text-2xl font-bold text-green-800 text-center mb-3">Pedido Realizado com Sucesso!</h2>
+            <p class="text-gray-600 text-center mb-8">
+                Obrigado por escolher o Alpha Burguer. Seu pedido foi recebido e será preparado com todo carinho.
+            </p>
+
+            <div class="bg-white rounded-lg shadow-md border border-gray-200 p-5 w-full mb-8">
+                <h3 class="font-semibold text-gray-800 mb-4 flex items-center">
+                    <i data-feather="info" class="w-5 h-5 mr-2 text-blue-500"></i>
+                    Informações do Pedido
+                </h3>
+
+                <div id="resumoPedido" class="space-y-3 mb-4">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Protocolo:</span>
+                        <span id="protocoloSpan" class="font-medium">PG123456</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Data:</span>
+                        <span id="dataSpan" class="font-medium"></span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Pagamento:</span>
+                        <span class="font-medium text-green-600">Confirmado</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Entrega estimada:</span>
+                        <span class="font-medium">30-45 minutos</span>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-200 pt-4 mt-4">
+                    <h4 class="font-medium text-gray-800 mb-3">Endereço de Entrega</h4>
+                    <p id="enderecoEntrega" class="text-sm text-gray-600">
+                        Carregando...
+                    </p>
+                </div>
+            </div>
+
+            <!-- Oferta Especial -->
+            <div class="bg-red-50 rounded-lg border-2 border-red-200 p-5 w-full mb-6">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-semibold text-red-800">Oferta Especial</h3>
+                    <span class="bg-red-600 text-white text-xs rounded-full px-2 py-1">Novo</span>
+                </div>
+                <p class="text-sm text-gray-700 mb-4">
+                    Temos uma promoção exclusiva para você aproveitar agora mesmo com 50% de desconto!
+                </p>
+                <button id="btnOferta" class="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center justify-center">
+                    <span>Ver Oferta Especial</span>
+                    <i data-feather="arrow-right" class="w-4 h-4 ml-2"></i>
+                </button>
+            </div>
+
+            <!-- Botões de ação -->
+            <div class="w-full space-y-3">
+                <a href="index.html" class="block w-full bg-white border border-gray-300 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors text-center">
+                    Voltar para Loja
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="assets/js/data.js"></script>
+    <script src="assets/js/utm/utm-handler.js"></script>
+    <script src="assets/js/utm/utm-navigation.js"></script>
+    <script src="assets/js/utm/utm-checkout.js"></script>
+    <script src="assets/js/utm/remove-utm-debugger.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            feather.replace();
+
+            // Preencher data atual
+            const hoje = new Date();
+            document.getElementById('dataSpan').textContent = hoje.toLocaleDateString('pt-BR');
+
+            // Carregar endereço de entrega
+            const enderecoCliente = JSON.parse(localStorage.getItem('enderecoCliente')) || {};
+            if (enderecoCliente) {
+                document.getElementById('enderecoEntrega').textContent = `${enderecoCliente.logradouro}, ${enderecoCliente.numero}, ${enderecoCliente.bairro}, ${enderecoCliente.cidade} - ${enderecoCliente.uf}`;
+            }
+
+            // Gerar protocolo
+            const protocolo = `PG${Date.now().toString().slice(-6)}`;
+            document.getElementById('protocoloSpan').textContent = protocolo;
+
+            // Facebook Pixel - Purchase Event
+            setTimeout(() => {
+                if (window.facebookPixel) {
+                    // Recuperar dados da compra do localStorage
+                    const carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
+                    const dadosCliente = JSON.parse(localStorage.getItem('dadosCliente')) || {};
+                    const transactionId = localStorage.getItem('transactionId') || protocolo;
+                    
+                    if (carrinho.length > 0) {
+                        const total = carrinho.reduce((sum, item) => {
+                            const preco = item.precoPromocional || item.preco || 0;
+                            return sum + (preco * item.quantidade);
+                        }, 0);
+                        
+                        const purchaseData = {
+                            transaction_id: transactionId,
+                            items: carrinho.map(item => ({
+                                id: item.id,
+                                name: item.nome,
+                                category: item.categoria,
+                                quantity: item.quantidade,
+                                value: item.precoPromocional || item.preco
+                            })),
+                            total: total,
+                            customer: {
+                                email: dadosCliente.email,
+                                phone: dadosCliente.telefone
+                            }
+                        };
+                        
+                        window.facebookPixel.trackPurchase(purchaseData);
+                        console.log('[Facebook Pixel] Purchase event enviado:', purchaseData);
+                    }
+                }
+            }, 1000); // Aguardar 1 segundo para garantir que o pixel carregou
+
+            // Botão de oferta
+            document.getElementById('btnOferta').addEventListener('click', function() {
+                window.location.href = 'upsell1.html';
+            });
+        });
+    </script>
+</body>
+
+</html> 

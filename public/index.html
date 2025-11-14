@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Alpha Burguer - Página Inicial</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    
+    <!-- UTMify Script -->
+    <script
+        src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+        data-utmify-prevent-xcod-sck
+        data-utmify-prevent-subids
+        async
+        defer
+    ></script>
+    
+    <!-- Facebook Pixel -->
+    <script src="assets/js/facebook-pixel.js" defer></script>
+</head>
+
+<body class="bg-white w-full min-h-screen max-w-md mx-auto">
+
+    <!-- Modal Etapa 1: Informar CEP -->
+    <div id="modalCEP" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-[90%] max-w-md text-center space-y-4">
+            <h2 class="text-xl font-bold">Procure a loja mais próxima de você!</h2>
+            <label class="block text-sm">Informe seu CEP:</label>
+            <input type="text" id="inputCEP" placeholder="00000-000" maxlength="9"
+                class="w-full border rounded px-3 py-2 text-sm text-center">
+            <div id="erroCEP" class="text-red-500 text-sm hidden"></div>
+            <button onclick="consultarCEP()" class="bg-green-600 text-white px-6 py-2 rounded">Próximo</button>
+        </div>
+    </div>
+
+    <!-- Modal Etapa 2: Informar Número -->
+    <div id="modalNumero" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-[90%] max-w-md text-center space-y-4">
+            <h2 class="text-xl font-bold">Estamos quase lá...</h2>
+            <div id="enderecoEncontrado" class="text-sm text-gray-600 mb-4"></div>
+            <label class="block text-sm">Informe o número da sua residência:</label>
+            <input type="text" id="inputNumero" placeholder="123"
+                class="w-full border rounded px-3 py-2 text-sm text-center">
+            <button onclick="salvarEndereco()" class="bg-green-600 text-white px-6 py-2 rounded">
+                Procurar loja mais próxima!
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Etapa 3: Carregando -->
+    <div id="modalLoading" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-[90%] max-w-md text-center space-y-4">
+            <h2 class="text-xl font-bold">Procurando a loja mais próxima...</h2>
+            <p>Procurando a loja mais próxima de você...</p>
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
+    </div>
+
+    <!-- Modal Etapa 4: Sucesso -->
+    <div id="modalSucesso" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-[90%] max-w-md text-center space-y-4">
+            <div class="text-green-600 text-3xl">✓</div>
+            <p>A loja mais próxima fica a <strong id="distanciaCalculada">2,3km</strong> de você!<br>Seu pedido chegará
+                entre 20 a 30 minutos.
+            </p>
+            <button onclick="fecharTodosModais()" class="bg-green-600 text-white px-6 py-2 rounded">Olhar cardápio de
+                ofertas!</button>
+        </div>
+    </div>
+
+
+
+    <!-- Header da loja -->
+    <div class="relative w-full">
+        <!-- Banner com imagem -->
+        <div class="relative w-full h-64 bg-gray-200 overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-40"></div>
+            <img id="bannerLoja" src="assets/img/banner_de_morango.png" alt="Banner de morangos" class="w-full h-full object-cover">
+
+            <!-- Botões de navegação -->
+            <div class="absolute top-4 left-4">
+                <button class="text-white bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center shadow-lg">
+                    <i data-feather="arrow-left" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="absolute top-4 right-4 flex space-x-2">
+                <button class="text-white bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center shadow-lg">
+                    <i data-feather="heart" class="w-5 h-5"></i>
+                </button>
+                <a href="https://www.instagram.com/alpha_burgueer?igsh=MXZoODR5dGx4dDl4aA==" target="_blank" class="text-white bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center shadow-lg">
+                    <i data-feather="instagram" class="w-5 h-5"></i>
+                </a>
+            </div>
+
+            <!-- Logo circular sobreposta - centralizada no banner -->
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <div
+                    class="w-28 h-28 bg-white rounded-full shadow-lg flex items-center justify-center border-4 logo-circular" style="border-color: #CDAD73;">
+                    <img id="logoLoja" src="assets/img/Logo_alphaburguer.jpg" alt="Alpha Burguer" class="w-24 h-24 rounded-full object-cover p-1">
+                </div>
+            </div>
+        </div>
+
+        <!-- Card único com todas as informações - ajustado para não sobrepor a logo -->
+        <div class="bg-white rounded-t-3xl mt-6 pt-6 px-6 pb-6">
+            <!-- Nome da loja e informações básicas -->
+            <div class="mb-4 text-center">
+                <h1 id="nomeLoja" class="text-2xl font-bold text-gray-900 mb-2">Alpha Burguer</h1>
+                <a href="https://www.instagram.com/alpha_burgueer?igsh=MXZoODR5dGx4dDl4aA==" target="_blank" class="inline-flex items-center text-sm text-gray-600 hover:text-pink-500">
+                    <i data-feather="instagram" class="w-4 h-4 mr-1"></i>
+                    <span>@alpha_burgueer</span>
+                </a>
+            </div>
+            
+            <div class="flex items-center justify-between text-sm text-gray-600 mb-4">
+                <div class="flex items-center">
+                    <i data-feather="map-pin" class="w-4 h-4 mr-1 text-gray-400"></i>
+                    <span id="distanciaLoja">2,3 km</span>
+                    <span class="mx-1">•</span>
+                    <span>Min R$ <span id="pedidoMinimo">15,00</span></span>
+                </div>
+                <div class="flex items-center">
+                    <i data-feather="star" class="w-4 h-4 mr-1 text-yellow-500"></i>
+                    <span id="avaliacaoNota" class="font-medium">4,9</span>
+                    <span class="text-gray-400 ml-1">(<span id="totalAvaliacoes">939</span>)</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between bg-green-50 rounded-lg p-3 border border-green-200">
+                <div class="flex items-center">
+                    <i data-feather="clock" class="w-4 h-4 mr-2 text-green-500"></i>
+                    <span class="font-medium text-green-800"><span id="tempoEntrega">30-45 min</span></span>
+                </div>
+                <div class="flex items-center">
+                    <i data-feather="truck" class="w-4 h-4 mr-2 text-green-500"></i>
+                    <span class="font-medium text-green-800" id="statusEntrega">Grátis</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seções de produtos -->
+    <div class="px-4 py-6" id="secoesProdutos">
+        <!-- Seções serão carregadas dinamicamente -->
+    </div>
+
+
+
+    <!-- Carrinho Fixo -->
+    <div id="carrinhoBar" class="fixed bottom-0 left-0 right-0 z-40 px-4 py-2 hidden bg-gray-100 border-t shadow-md">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <div class="flex flex-col">
+                <span class="text-[13px] text-gray-700">Total com <strong>entrega grátis</strong></span>
+                <span id="resumoTotal" class="text-base text-black font-semibold leading-tight">R$ 0,00 <span
+                        class="text-sm font-normal text-gray-600">/ 0 item</span></span>
+            </div>
+            <button onclick="abrirCheckout()"
+                class="bg-red-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow">Ver Carrinho</button>
+        </div>
+    </div>
+
+    <!-- Modal de Produto Detalhado -->
+    <div id="modalProduto" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-lg w-[90%] max-w-md max-h-[90vh] overflow-y-auto">
+            <!-- Header do Modal -->
+            <div class="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Detalhes do Produto</h3>
+                <button onclick="fecharModalProduto()" class="text-gray-500 hover:text-gray-700">
+                    <i data-feather="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Conteúdo do Modal -->
+            <div class="p-4">
+                <!-- Imagem do Produto -->
+                <div class="mb-4">
+                    <img id="modalProdutoImagem" src="" alt="" class="w-full h-48 object-cover rounded-lg">
+                </div>
+
+                <!-- Informações do Produto -->
+                <div class="mb-4">
+                    <h2 id="modalProdutoNome" class="text-xl font-bold mb-2"></h2>
+                    <p id="modalProdutoDescricao" class="text-gray-600 text-sm mb-3"></p>
+
+                    <!-- Tags do Produto -->
+                    <div id="modalProdutoTags" class="mb-3"></div>
+
+                    <!-- Informações Extras -->
+                    <div id="modalProdutoInfos" class="mb-3 text-sm text-gray-500"></div>
+
+                    <!-- Preços -->
+                    <div class="mb-4">
+                        <div id="modalProdutoPrecoOriginal" class="text-sm text-gray-500 line-through hidden"></div>
+                        <div id="modalProdutoPrecoAtual" class="text-2xl font-bold text-green-600"></div>
+                    </div>
+                </div>
+
+                <!-- Controles de Quantidade -->
+                <div class="flex items-center justify-between mb-6">
+                    <span class="text-sm font-medium">Quantidade:</span>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="diminuirQuantidade()"
+                            class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                            <i data-feather="minus" class="w-4 h-4"></i>
+                        </button>
+                        <span id="quantidadeProduto" class="text-lg font-semibold min-w-[2rem] text-center">1</span>
+                        <button onclick="aumentarQuantidade()"
+                            class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                            <i data-feather="plus" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Botão Adicionar ao Carrinho -->
+                <button onclick="adicionarProdutoAoCarrinho()"
+                    class="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
+                    <span id="textoBotaoAdicionar">Adicionar ao Carrinho</span>
+                    <span id="totalProduto" class="ml-2"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+    <!-- Modais adicionais serão incluídos aqui -->
+    <div id="modals-container"></div>
+
+    <script src="config.js"></script>
+    <script src="assets/js/data.js"></script>
+    <script src="assets/js/app.js"></script>
+    <script src="assets/js/fix-navegacao.js"></script>
+    <script src="assets/js/utm/utm-handler.js"></script>
+    <script src="assets/js/utm/utm-navigation.js"></script>
+    <script src="assets/js/utm/utm-checkout.js"></script>
+    <script src="assets/js/utm/remove-utm-debugger.js"></script>
+</body>
+
+</html>

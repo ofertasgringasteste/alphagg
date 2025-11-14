@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Finalizar Pedido - Alpha Burguer</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    
+    <!-- UTMify Script -->
+    <script
+        src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+        data-utmify-prevent-xcod-sck
+        data-utmify-prevent-subids
+        async
+        defer
+    ></script>
+    
+    <!-- Facebook Pixel -->
+    <script src="assets/js/facebook-pixel.js" defer></script>
+</head>
+
+<body class="bg-gray-50 w-full min-h-screen max-w-md mx-auto">
+
+    <!-- Header com progresso -->
+    <div class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="flex items-center justify-between p-4">
+            <button onclick="voltarParaCarrinho()" class="flex items-center text-gray-600 hover:text-gray-800">
+                <i data-feather="arrow-left" class="w-5 h-5 mr-2"></i>
+                <span class="font-medium">Voltar</span>
+            </button>
+            <h1 class="text-lg font-semibold text-gray-900">Finalizar Pedido</h1>
+            <div class="w-16"></div> <!-- Espaçador -->
+        </div>
+        
+        <!-- Indicador de progresso -->
+        <div class="px-4 pb-4">
+            <div class="flex items-center justify-between">
+                <div id="etapa1Indicator" class="flex items-center">
+                    <div class="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center text-sm font-semibold">1</div>
+                    <span class="ml-2 text-sm font-medium text-gray-900">Dados</span>
+                </div>
+                <div class="flex-1 h-0.5 bg-gray-300 mx-4"></div>
+                <div id="etapa2Indicator" class="flex items-center opacity-50">
+                    <div class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-sm font-semibold">2</div>
+                    <span class="ml-2 text-sm text-gray-600">Endereço</span>
+                </div>
+                <div class="flex-1 h-0.5 bg-gray-300 mx-4"></div>
+                <div id="etapa3Indicator" class="flex items-center opacity-50">
+                    <div class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-sm font-semibold">3</div>
+                    <span class="ml-2 text-sm text-gray-600">Pagamento</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteúdo principal -->
+    <div class="flex-1 pb-32">
+        <!-- Etapa 1: Dados Pessoais -->
+        <div id="checkoutEtapa1Page" class="p-4">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-4">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                    <i data-feather="user" class="w-5 h-5 mr-2 text-red-600"></i>
+                    Seus Dados
+                </h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label for="nomeClientePage" class="block text-sm font-medium text-gray-700 mb-2">Nome Completo *</label>
+                        <input type="text" id="nomeClientePage" placeholder="Digite seu nome completo"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 text-base">
+                        <div id="erroNomePage" class="text-red-500 text-sm mt-1 hidden"></div>
+                    </div>
+
+                    <div>
+                        <label for="telefoneClientePage" class="block text-sm font-medium text-gray-700 mb-2">Telefone *</label>
+                        <input type="tel" id="telefoneClientePage" placeholder="(00) 00000-0000" maxlength="15"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 text-base">
+                        <div id="erroTelefonePage" class="text-red-500 text-sm mt-1 hidden"></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Etapa 2: Endereço -->
+        <div id="checkoutEtapa2Page" class="p-4 hidden">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-4">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                    <i data-feather="map-pin" class="w-5 h-5 mr-2 text-red-600"></i>
+                    Endereço de Entrega
+                </h2>
+
+                <div id="enderecoSalvoPage" class="space-y-4">
+                    <!-- Endereço será carregado aqui -->
+                </div>
+
+                <div id="semEnderecoPage" class="hidden text-center py-8">
+                    <i data-feather="map-pin" class="w-16 h-16 mx-auto mb-4 text-gray-300"></i>
+                    <p class="text-gray-500 mb-4">Nenhum endereço encontrado</p>
+                    <button onclick="solicitarNovoEndereco()"
+                        class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-medium">
+                        Informar Endereço
+                    </button>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-gray-200">
+                    <button onclick="alterarEndereco()" class="text-red-600 text-sm hover:text-red-700 flex items-center">
+                        <i data-feather="edit-2" class="w-4 h-4 mr-1"></i>
+                        Alterar endereço
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Etapa 3: Pagamento PIX -->
+        <div id="checkoutEtapa3Page" class="p-4 hidden">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-4">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                    <i data-feather="credit-card" class="w-5 h-5 mr-2 text-red-600"></i>
+                    Pagamento PIX
+                </h2>
+
+                <!-- Estado: Gerando PIX -->
+                <div id="gerandoPixPage" class="text-center py-12">
+                    <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-red-600 mx-auto mb-6"></div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Gerando código PIX...</h3>
+                    <p class="text-gray-600">Aguarde um momento</p>
+                </div>
+
+                <!-- Estado: PIX Gerado -->
+                <div id="pixGeradoPage" class="hidden">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-center mb-2">
+                            <i data-feather="info" class="w-5 h-5 text-blue-600 mr-2"></i>
+                            <span class="text-sm font-medium text-blue-800">Como pagar</span>
+                        </div>
+                        <p class="text-sm text-blue-700">
+                            Escaneie o QR Code ou copie o código PIX e cole no seu app de pagamento.
+                        </p>
+                    </div>
+
+                    <!-- QR Code -->
+                    <div class="text-center mb-6">
+                        <div id="qrCodeContainerPage"
+                            class="bg-white p-6 rounded-lg border-2 border-dashed border-gray-300 inline-block cursor-pointer hover:border-red-500 transition-colors"
+                            onclick="copiarCodigoPixPage()">
+                            <img id="qrCodeImagePage" src="" alt="QR Code PIX" class="w-56 h-56 mx-auto">
+                            <p class="text-sm text-gray-500 mt-3">Clique para copiar o código</p>
+                            <div id="pixStatusPage" class="mt-2 bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full inline-flex items-center">
+                                <svg class="w-3 h-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                                <span>Código PIX gerado com sucesso</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Código PIX -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Código PIX:</label>
+                        <div class="flex">
+                            <input id="codigoPixPage" type="text" readonly
+                                class="flex-1 border border-gray-300 rounded-l-lg px-4 py-3 bg-gray-50 text-sm font-mono"
+                                placeholder="Código será gerado...">
+                            <button onclick="copiarCodigoPixPage()"
+                                class="bg-red-600 text-white px-6 py-3 rounded-r-lg hover:bg-red-700 transition-colors">
+                                <i data-feather="copy" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Status do Pagamento -->
+                    <div id="statusPagamentoPage" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-center">
+                            <div class="animate-pulse w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
+                            <span class="text-sm font-medium text-yellow-800">Aguardando pagamento...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estado: Pagamento Confirmado -->
+                <div id="pagamentoConfirmadoPage" class="hidden">
+                    <div class="text-center py-8">
+                        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i data-feather="check" class="w-10 h-10 text-green-600"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-green-800 mb-3">Pagamento Confirmado!</h3>
+                        <p class="text-green-600 mb-6">Seu pedido foi recebido e será preparado em breve.</p>
+                    </div>
+
+                    <!-- Resumo Final do Pedido -->
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                        <h4 class="font-semibold text-green-800 mb-4 flex items-center">
+                            <i data-feather="check-circle" class="w-5 h-5 mr-2"></i>
+                            Detalhes do Pedido
+                        </h4>
+                        <div id="resumoFinalPedidoPage" class="space-y-2 text-sm text-green-700">
+                            <!-- Resumo final será inserido aqui -->
+                        </div>
+                    </div>
+
+                    <!-- Informações de Entrega -->
+                    <div class="bg-white border border-green-200 rounded-lg p-4">
+                        <div class="flex items-center mb-3">
+                            <i data-feather="truck" class="w-5 h-5 text-green-600 mr-2"></i>
+                            <span class="font-medium text-green-800">Informações de Entrega</span>
+                        </div>
+                        <div class="text-sm text-green-700 space-y-2">
+                            <div class="flex justify-between">
+                                <span>Tempo estimado:</span>
+                                <span class="font-medium">30-45 minutos</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Protocolo:</span>
+                                <span id="protocoloPedidoPage" class="font-medium"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Endereço:</span>
+                                <span id="enderecoEntregaPage" class="font-medium"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumo do pedido sempre visível -->
+        <div class="px-4">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky bottom-24">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-900 flex items-center">
+                        <i data-feather="shopping-bag" class="w-4 h-4 mr-2"></i>
+                        Resumo do Pedido
+                    </h3>
+                    <button onclick="voltarParaCarrinho()" class="text-red-600 text-sm hover:text-red-700 flex items-center">
+                        <i data-feather="edit-2" class="w-3 h-3 mr-1"></i>
+                        Editar
+                    </button>
+                </div>
+                <div id="resumoCheckoutPage">
+                    <!-- Resumo será inserido aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botão de ação fixo -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 max-w-md mx-auto">
+        <div class="flex items-center justify-between mb-3">
+            <span class="font-bold text-lg text-gray-900">Total a Pagar</span>
+            <span id="totalCheckoutPage" class="font-bold text-xl text-red-600">R$ 0,00</span>
+        </div>
+        <button id="btnProximaEtapaPage" onclick="proximaEtapaCheckoutPage()" 
+            class="w-full bg-red-600 text-white py-4 rounded-lg font-semibold text-lg hover:bg-red-700 transition-colors flex items-center justify-center">
+            <span id="textoBotaoEtapa">Continuar</span>
+            <i data-feather="arrow-right" class="w-5 h-5 ml-2"></i>
+        </button>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="assets/js/data.js"></script>
+    <script src="assets/js/app.js"></script>
+    <script src="assets/js/checkout-page.js"></script>
+    <script src="assets/js/utm/utmify-events.js"></script>
+    <script src="assets/js/fix-navegacao.js"></script>
+    <script src="assets/js/utm/utm-handler.js"></script>
+    <script src="assets/js/utm/utm-navigation.js"></script>
+    <script src="assets/js/utm/utm-checkout.js"></script>
+    <script src="assets/js/utm/remove-utm-debugger.js"></script>
+</body>
+
+</html>
