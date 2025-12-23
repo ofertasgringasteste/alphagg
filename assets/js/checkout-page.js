@@ -298,13 +298,31 @@ async function iniciarPagamentoPixPage() {
                 body: JSON.stringify(dadosPagamento)
             });
 
-            if (!response.ok) {
-                console.error("Resposta não-ok da API:", response.status, response.statusText);
-                throw new Error(`Erro na API: ${response.status} ${response.statusText}`);
+            console.log("Status da resposta:", response.status, response.statusText);
+
+            // Tentar ler a resposta mesmo se não for OK
+            let resposta;
+            try {
+                const responseText = await response.text();
+                console.log("Resposta bruta da API:", responseText);
+                
+                if (!responseText) {
+                    throw new Error('Resposta vazia do servidor');
+                }
+                
+                resposta = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error("Erro ao parsear resposta JSON:", parseError);
+                throw new Error('Erro ao processar resposta do servidor: ' + parseError.message);
             }
 
-            const resposta = await response.json();
             console.log("Resposta da API PIX:", resposta);
+
+            if (!response.ok) {
+                const errorMsg = resposta.message || resposta.error || `Erro HTTP ${response.status}`;
+                console.error("Erro na API:", errorMsg);
+                throw new Error(errorMsg);
+            }
 
             if (resposta.success) {
                 exibirPixGeradoPage(resposta);

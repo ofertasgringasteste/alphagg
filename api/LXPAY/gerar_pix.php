@@ -31,10 +31,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 try {
     // Lê dados do POST
     $input = file_get_contents('php://input');
-    $dados = json_decode($input, true);
     
     // Log para debug
-    error_log("[LXPAY] 📥 Dados recebidos: " . substr($input, 0, 500));
+    error_log("[LXPAY] 📥 Dados recebidos (primeiros 500 chars): " . substr($input, 0, 500));
+    
+    // Decodificar JSON
+    $dados = json_decode($input, true);
     
     // Verificar se houve erro no JSON decode
     if (json_last_error() !== JSON_ERROR_NONE) {
@@ -56,7 +58,7 @@ try {
     
     // Validações básicas
     if (empty($dados)) {
-        error_log("[LXPAY] ❌ Dados vazios");
+        error_log("[LXPAY] ❌ Dados vazios após decode");
         http_response_code(400);
         echo json_encode([
             'success' => false,
@@ -346,11 +348,32 @@ try {
     error_log("[LXPAY] ❌ Exceção capturada: " . $e->getMessage());
     error_log("[LXPAY] 🔍 Stack trace: " . $e->getTraceAsString());
     
-    http_response_code(400);
+    // Garantir que o header está definido antes de enviar resposta
+    if (!headers_sent()) {
+        http_response_code(400);
+    }
+    
     echo json_encode([
         'success' => false,
         'error' => $e->getMessage(),
         'message' => $e->getMessage() // Compatibilidade
     ], JSON_UNESCAPED_UNICODE);
+    
+    exit;
+} catch (Error $e) {
+    error_log("[LXPAY] ❌ Erro fatal: " . $e->getMessage());
+    error_log("[LXPAY] 🔍 Stack trace: " . $e->getTraceAsString());
+    
+    if (!headers_sent()) {
+        http_response_code(500);
+    }
+    
+    echo json_encode([
+        'success' => false,
+        'error' => 'Erro interno do servidor',
+        'message' => 'Ocorreu um erro ao processar a requisição'
+    ], JSON_UNESCAPED_UNICODE);
+    
+    exit;
 }
 
