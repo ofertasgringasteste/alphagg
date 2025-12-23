@@ -33,6 +33,9 @@ try {
     $input = file_get_contents('php://input');
     $dados = json_decode($input, true);
     
+    // Log para debug
+    error_log("[LXPAY] 📥 Dados recebidos: " . substr($input, 0, 500));
+    
     // Se não veio JSON, tenta pegar do $_POST
     if (empty($dados)) {
         $dados = $_POST;
@@ -40,6 +43,7 @@ try {
     
     // Validações básicas
     if (empty($dados)) {
+        error_log("[LXPAY] ❌ Dados vazios");
         throw new Exception('Dados não fornecidos');
     }
     
@@ -48,21 +52,27 @@ try {
     // ============================================
     
     // Extrair dados do formato do checkout
+    // Suporta tanto formato direto quanto formato com objeto 'cliente'
     $valor_centavos = isset($dados['valor']) ? intval($dados['valor']) : 0;
-    $nome_cliente = $dados['nome'] ?? null;
-    $email_cliente = $dados['email'] ?? null;
-    $cpf_cliente = $dados['cpf'] ?? null;
-    $telefone_cliente = $dados['telefone'] ?? null;
+    $nome_cliente = $dados['nome'] ?? $dados['cliente']['nome'] ?? null;
+    $email_cliente = $dados['email'] ?? $dados['cliente']['email'] ?? null;
+    $cpf_cliente = $dados['cpf'] ?? $dados['cliente']['cpf'] ?? null;
+    $telefone_cliente = $dados['telefone'] ?? $dados['cliente']['telefone'] ?? null;
     $itens_carrinho = $dados['itens'] ?? [];
     $endereco_cliente = $dados['endereco'] ?? null;
     $utmParams = $dados['utmParams'] ?? [];
     
+    // Log dos dados extraídos
+    error_log("[LXPAY] 📊 Dados extraídos - Valor: $valor_centavos, Nome: $nome_cliente, Email: $email_cliente, CPF: " . ($cpf_cliente ? 'fornecido' : 'não fornecido'));
+    
     // Validações
     if ($valor_centavos <= 0) {
+        error_log("[LXPAY] ❌ Valor inválido: $valor_centavos");
         throw new Exception('Valor inválido');
     }
     
     if (empty($nome_cliente) || empty($email_cliente)) {
+        error_log("[LXPAY] ❌ Dados do cliente incompletos - Nome: " . ($nome_cliente ? 'OK' : 'VAZIO') . ", Email: " . ($email_cliente ? 'OK' : 'VAZIO'));
         throw new Exception('Nome e email do cliente são obrigatórios');
     }
     
@@ -94,8 +104,19 @@ try {
     // Limpar CPF (remover formatação)
     $cpf_cliente = preg_replace('/[^0-9]/', '', $cpf_cliente);
     
+    // Validar CPF antes de enviar (a classe LxpayApi também valida, mas melhor validar antes)
+    if (strlen($cpf_cliente) !== 11) {
+        error_log("[LXPAY] ❌ CPF inválido (tamanho): $cpf_cliente");
+        throw new Exception('CPF deve conter 11 dígitos');
+    }
+    
     // Limpar telefone
     $telefone_cliente = $telefone_cliente ? preg_replace('/[^0-9]/', '', $telefone_cliente) : '11999999999';
+    
+    // Validar telefone (deve ter pelo menos 10 dígitos)
+    if (strlen($telefone_cliente) < 10) {
+        $telefone_cliente = '11999999999'; // Telefone padrão se inválido
+    }
     
     // Preparar estrutura de dados para LXPAY
     $dadosLxpay = [
@@ -186,25 +207,53 @@ try {
     // GERAR PIX VIA API LXPAY
     // ============================================
     
+    // Log dos dados que serão enviados para LXPAY
+    error_log("[LXPAY] 📤 Dados preparados para LXPAY: " . json_encode($dadosLxpay, JSON_UNESCAPED_UNICODE));
+    
     $lxpay = new LxpayApi();
     $resultado = $lxpay->gerarPix($dadosLxpay);
     
+    // Log da resposta
+    error_log("[LXPAY] 📥 Resposta da API: " . json_encode($resultado, JSON_UNESCAPED_UNICODE));
+    
     if (!$resultado['success']) {
-        throw new Exception($resultado['error'] ?? 'Erro ao gerar PIX na API LXPAY');
+        $erro = $resultado['error'] ?? 'Erro ao gerar PIX na API LXPAY';
+        $detalhes = isset($resultado['details']) ? ' - Detalhes: ' . json_encode($resultado['details']) : '';
+        $httpCode = isset($resultado['http_code']) ? ' - HTTP: ' . $resultado['http_code'] : '';
+        error_log("[LXPAY] ❌ Erro: $erro$detalhes$httpCode");
+        throw new Exception($erro);
     }
     
     // Extrair dados da resposta
-    $responseData = $resultado['data'];
-    $transactionId = $responseData['transactionId'] ?? null;
-    $pixData = $responseData['pix'] ?? null;
+    $responseData = $resultado['data'] ?? [];
+    error_log("[LXPAY] 📊 Response Data: " . json_encode($responseData, JSON_UNESCAPED_UNICODE));
+    
+    // Tentar extrair transactionId de vários campos possíveis
+    $transactionId = $responseData['transactionId'] ?? 
+                     $responseData['transaction_id'] ?? 
+                     $responseData['id'] ?? 
+                     $responseData['order']['id'] ?? 
+                     null;
+    
+    // Tentar extrair código PIX de vários campos possíveis
+    $pixData = $responseData['pix'] ?? $responseData['pixCode'] ?? null;
     $pixCode = null;
     $qrCodeUrl = null;
     
     // Extrair código PIX da resposta
     if (is_array($pixData)) {
-        $pixCode = $pixData['code'] ?? $pixData['qrcode'] ?? null;
+        $pixCode = $pixData['code'] ?? $pixData['qrcode'] ?? $pixData['qrCode'] ?? null;
+        $qrCodeUrl = $pixData['qrCodeUrl'] ?? $pixData['qr_code_image_url'] ?? $pixData['imageUrl'] ?? null;
     } elseif (is_string($pixData)) {
         $pixCode = $pixData;
+    }
+    
+    // Se não encontrou no pixData, tentar diretamente na resposta
+    if (empty($pixCode)) {
+        $pixCode = $responseData['pixCode'] ?? 
+                   $responseData['qrcode'] ?? 
+                   $responseData['code'] ?? 
+                   null;
     }
     
     // Gerar URL do QR Code se não fornecida
@@ -212,7 +261,10 @@ try {
         $qrCodeUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' . urlencode($pixCode);
     }
     
+    error_log("[LXPAY] ✅ Transaction ID: $transactionId, PIX Code: " . ($pixCode ? substr($pixCode, 0, 50) . '...' : 'NÃO ENCONTRADO'));
+    
     if (empty($transactionId)) {
+        error_log("[LXPAY] ❌ Transaction ID não encontrado. Resposta completa: " . json_encode($responseData, JSON_UNESCAPED_UNICODE));
         throw new Exception('Transaction ID não retornado pela API LXPAY');
     }
     
@@ -261,6 +313,9 @@ try {
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     
 } catch (Exception $e) {
+    error_log("[LXPAY] ❌ Exceção capturada: " . $e->getMessage());
+    error_log("[LXPAY] 🔍 Stack trace: " . $e->getTraceAsString());
+    
     http_response_code(400);
     echo json_encode([
         'success' => false,
