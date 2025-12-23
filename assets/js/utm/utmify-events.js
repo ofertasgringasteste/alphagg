@@ -1,7 +1,7 @@
 // Sistema de eventos UTMify independente
 class UTMifyEvents {
     constructor() {
-        this.apiToken = 'qQMDVJ99ZiXuRlqgSHVyCGMG9hMarzZ0hDVb'; // API Token correto
+        this.apiToken = 'WSVQwG52pAWTHXZxG0Aeza5wcuLtA4jFS9xq'; // API Token correto
         this.apiUrl = 'https://api.utmify.com.br/api-credentials/orders';
         this.enabled = true;
         
