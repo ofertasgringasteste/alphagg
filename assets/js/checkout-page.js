@@ -283,8 +283,8 @@ async function iniciarPagamentoPixPage() {
         
         // Determinar caminho correto para o endpoint (LXPAY)
         const apiUrl = window.location.pathname.includes('/checkout.html') ? 
-            'api/LXPAY/gerar_pix.php' : 
-            'api/LXPAY/gerar_pix.php';
+            'api/LXPAY/gerar_pix.js' : 
+            'api/LXPAY/gerar_pix.js';
 
         console.log("Fazendo requisição para LXPAY:", apiUrl);
         
