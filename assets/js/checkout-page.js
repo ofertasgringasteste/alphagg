@@ -281,14 +281,14 @@ async function iniciarPagamentoPixPage() {
 
         console.log("Enviando dados para API PIX:", dadosPagamento);
         
-        // Determinar caminho correto para o endpoint (Abyssal Pay)
+        // Determinar caminho correto para o endpoint (LXPAY)
         const apiUrl = window.location.pathname.includes('/checkout.html') ? 
-            'api/checkout/abyssalpay-pagamento.js' : 
-            'api/checkout/abyssalpay-pagamento.js';
+            'api/LXPAY/gerar_pix.php' : 
+            'api/LXPAY/gerar_pix.php';
 
-        console.log("Fazendo requisição para Abyssal Pay:", apiUrl);
+        console.log("Fazendo requisição para LXPAY:", apiUrl);
         
-        // Fazer a requisição para a API Abyssal Pay
+        // Fazer a requisição para a API LXPAY
         try {
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -310,15 +310,19 @@ async function iniciarPagamentoPixPage() {
                 exibirPixGeradoPage(resposta);
                 iniciarVerificacaoPagamentoPage(resposta.transactionId || resposta.token);
             } else {
-                throw new Error(resposta.message || 'Erro ao gerar PIX');
+                throw new Error(resposta.message || resposta.error || 'Erro ao gerar PIX');
             }
         } catch (fetchError) {
             console.error("Erro na requisição fetch:", fetchError);
             
             try {
-                // Tentar rota alternativa (fallback para API antiga se necessário)
-                console.log("Tentando rota alternativa...");
-                const alternativeResponse = await fetch('../api/checkout/abyssalpay-pagamento.js', {
+                // Tentar rota alternativa (fallback para Abyssal Pay se necessário)
+                console.log("Tentando rota alternativa (Abyssal Pay)...");
+                const alternativeUrl = window.location.pathname.includes('/checkout.html') ? 
+                    'api/checkout/abyssalpay-pagamento.js' : 
+                    'api/checkout/abyssalpay-pagamento.js';
+                
+                const alternativeResponse = await fetch(alternativeUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -455,8 +459,8 @@ function iniciarVerificacaoPagamentoPage(transactionId) {
         console.log(`Verificando pagamento (tentativa ${tentativas}/${maxTentativas})`);
 
         try {
-            // Fazer chamada real para API de verificação
-            const response = await fetch(`api/checkout/verificar.js?id=${transactionId}`);
+            // Fazer chamada real para API de verificação (LXPAY)
+            const response = await fetch(`api/LXPAY/verificar.php?id=${transactionId}`);
             if (!response.ok) {
                 throw new Error(`Erro na API de verificação: ${response.status}`);
             }
