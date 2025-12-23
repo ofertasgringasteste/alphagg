@@ -54,7 +54,7 @@ function validarCPF(cpf) {
             d += parseInt(cpf[c]) * ((t + 1) - c);
         }
         d = ((10 * d) % 11) % 10;
-        if (parseInt(cpf[c]) !== d) {
+        if (parseInt(cpf[t]) !== d) {
             return false;
         }
     }
