@@ -1,7 +1,6 @@
 # Permitir acesso aos arquivos PHP
 <FilesMatch "\.php$">
-    Order Allow,Deny
-    Allow from all
+    Require all granted
 </FilesMatch>
 
 # Headers CORS

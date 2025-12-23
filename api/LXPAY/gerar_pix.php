@@ -5,6 +5,11 @@
  * Integrado com banco de dados SQLite
  */
 
+// Log inicial para debug
+$logFile = __DIR__ . '/../logs/lxpay_debug.log';
+$logEntry = date('Y-m-d H:i:s') . " - [INICIO] Requisição recebida - Método: " . ($_SERVER['REQUEST_METHOD'] ?? 'N/A') . " - URI: " . ($_SERVER['REQUEST_URI'] ?? 'N/A') . "\n";
+@file_put_contents($logFile, $logEntry, FILE_APPEND);
+
 // Headers CORS e Content-Type - devem ser enviados antes de qualquer saída
 if (!headers_sent()) {
     header('Content-Type: application/json; charset=utf-8');
