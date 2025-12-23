@@ -261,16 +261,19 @@ class LxpayApi {
             ];
         }
         
+        // Limpa documento (remove formatação) antes de validar
+        $documentoLimpo = preg_replace('/[^0-9]/', '', $dados['client']['document']);
+        $dados['client']['document'] = $documentoLimpo;
+        
         // Valida documento
-        if (!$this->validarDocumento($dados['client']['document'])) {
+        if (!$this->validarDocumento($documentoLimpo)) {
+            error_log("[LXPAY API] ❌ CPF/CNPJ inválido: $documentoLimpo");
             return [
                 'success' => false,
-                'error' => 'CPF/CNPJ inválido'
+                'error' => 'CPF/CNPJ inválido',
+                'document' => $documentoLimpo
             ];
         }
-        
-        // Limpa documento (remove formatação)
-        $dados['client']['document'] = preg_replace('/[^0-9]/', '', $dados['client']['document']);
         
         // Gera identifier se não fornecido
         if (empty($dados['identifier'])) {
