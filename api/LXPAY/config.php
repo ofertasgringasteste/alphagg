@@ -6,14 +6,14 @@
  */
 
 // Credenciais da API LXPAY
-define('LXPAY_PUBLIC_KEY', 'mathiassmitth1_1766005037499');
-define('LXPAY_SECRET_KEY', 'dc6f2a38-06b4-4e5d-9430-607b9e1a2f55');
+define('LXPAY_PUBLIC_KEY', 'gabrielrubela_1766457585001');
+define('LXPAY_SECRET_KEY', 'd0066960-e17a-4b6c-baa1-8a0c96b97eaa');
 
 // URL Base da API
 define('LXPAY_API_BASE_URL', 'https://api.lxpay.com.br');
 
 // Workspace ID para Split de Pagamento (opcional)
-define('LXPAY_WORKSPACE_ID', '14f03260-23f3-4d76-a48a-aebf750cc980');
+define('LXPAY_WORKSPACE_ID', '67c8e59b-9512-4324-855b-685519b40e09');
 
 // Timeout para requisições (em segundos)
 define('LXPAY_TIMEOUT', 30);
