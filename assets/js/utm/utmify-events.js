@@ -73,12 +73,19 @@ class UTMifyEvents {
             
             const utmParams = this.getUtmParams();
             const clientIP = await this.getClientIP();
-            const amountCents = Math.round((dadosTransacao.amount || 19.99) * 100);
+            // O valor já vem em centavos do gerar_pix.js (campo 'amount')
+            // Se não vier, tenta converter de decimal para centavos
+            let amountCents = dadosTransacao.amount;
+            if (!amountCents || amountCents < 100) {
+                // Se o valor parece ser decimal (menor que 100), converte para centavos
+                amountCents = Math.round((dadosTransacao.amount || dadosTransacao.amountDecimal || 19.99) * 100);
+            }
+            amountCents = Math.round(amountCents); // Garantir que é inteiro
             
             // Cálculo de comissão conforme exemplo
             const gatewayFeeInCents = Math.round(amountCents * 0.04); // 4% taxa
             const userCommissionInCents = amountCents - gatewayFeeInCents;
-            const totalPriceInCents = amountCents + gatewayFeeInCents;
+            const totalPriceInCents = amountCents; // Total é o valor original, não inclui taxa
             
             const payload = {
                 orderId: String(dadosTransacao.token || dadosTransacao.transactionId || 'TRX-' + Date.now()),
