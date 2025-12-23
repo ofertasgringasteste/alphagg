@@ -617,6 +617,8 @@ export default async function handler(req, res) {
             qrcode: pixCode, // Compatibilidade
             qrCodeUrl: qrCodeUrl,
             qr_code_image_url: qrCodeUrl, // Compatibilidade
+            amount: valor_centavos, // Valor em centavos para UTMify
+            amountDecimal: valor_decimal, // Valor em decimal para exibição
             pix: {
                 code: pixCode
             }
