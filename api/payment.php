@@ -119,8 +119,8 @@ $input = json_decode(file_get_contents('php://input'), true);
 // Registrar solicitação para depuração
 file_put_contents('payment_log.txt', date('Y-m-d H:i:s') . ' - ' . json_encode($input) . "\n", FILE_APPEND);
 
-// Carregar configurações da Monetrix
-require_once __DIR__ . '/monetrix_config.php';
+// Carregar configurações da LXPAY
+require_once __DIR__ . '/LXPAY/LxpayApi.php';
 
 // Verificar dados obrigatórios
 if (!isset($input['produtos']) || empty($input['produtos'])) {
@@ -129,8 +129,8 @@ if (!isset($input['produtos']) || empty($input['produtos'])) {
     exit;
 }
 
-// Preparar os dados para a API Monetrix
-$valorTotal = isset($input['total']) ? floatval($input['total']) * 100 : 0; // Converter para centavos
+// Preparar os dados para a API LXPAY
+$valorTotal = isset($input['total']) ? floatval($input['total']) * 100 : 0; // Valor em centavos
 if ($valorTotal <= 0) {
     // Calcular o valor total com base nos produtos
     $valorTotal = 0;
@@ -156,116 +156,92 @@ if (isset($input['utm']) && is_array($input['utm'])) {
     $utmParams = $input['utm'];
 }
 
-// Criar objeto de metadados (importante para a Monetrix)
+// Preparar dados para a API LXPAY
+$valorDecimal = $valorTotal / 100; // LXPAY espera valor em decimal
+
+// Preparar produtos para LXPAY
+$products = [];
+foreach ($input['produtos'] as $produto) {
+    $preco = floatval($produto['preco']); // Preço em decimal
+    $quantidade = isset($produto['quantidade']) ? intval($produto['quantidade']) : 1;
+    
+    $products[] = [
+        'id' => $produto['id'] ?? uniqid('prod_'),
+        'name' => isset($produto['nome']) ? $produto['nome'] : $produto['id'],
+        'price' => $preco,
+        'quantity' => $quantidade
+    ];
+}
+
+// Criar objeto de metadados
 $metadata = [
     'orderTime' => date('c'),
-    'platform' => 'DocinhoDoAmor',
+    'platform' => 'AlphaBurguer',
+    'entrega' => $endereco
 ];
 
 // Adicionar UTMs aos metadados
 foreach ($utmParams as $key => $value) {
     if ($value) {
-        $metadata[$key] = $value;
+        $metadata['utm_params'][$key] = $value;
     }
 }
 
-// Preparar os itens para a API Monetrix (NOVA ESTRUTURA)
-$items = [];
-foreach ($input['produtos'] as $produto) {
-    $preco = floatval($produto['preco']) * 100; // Converter para centavos
-    $quantidade = isset($produto['quantidade']) ? intval($produto['quantidade']) : 1;
-    
-    $items[] = [
-        'title' => isset($produto['nome']) ? $produto['nome'] : $produto['id'],
-        'unitPrice' => intval($preco),
-        'quantity' => $quantidade,
-        'tangible' => false // Produtos alimentícios são considerados intangíveis para envio
-    ];
-}
-
-// Gerar referência externa única
-$externalRef = 'pix_' . time() . '_' . substr(md5(uniqid()), 0, 8);
-
-// Construir o payload para a NOVA API Monetrix
-$payload = [
-    'amount' => $valorTotal,
-    'paymentMethod' => 'pix',
-    'pix' => [
-        'expiresInDays' => MONETRIX_PIX_EXPIRATION_DAYS // Nova API usa dias
-    ],
-    'items' => $items,
-    'shipping' => [
-        'fee' => 0, // Entrega grátis
-        'address' => [
-            'zipCode' => preg_replace('/[^0-9]/', '', $endereco['cep']),
-            'street' => $endereco['rua'],
-            'streetNumber' => strval($endereco['numero']),
-            'city' => $endereco['cidade'],
-            'state' => $endereco['estado'],
-            'country' => 'BR',
-            'neighborhood' => $endereco['bairro']
-        ]
-    ],
-    'subMerchant' => getSubMerchantData(),
-    'customer' => [
+// Preparar dados para LXPAY
+$dadosLxpay = [
+    'amount' => $valorDecimal,
+    'client' => [
         'name' => $nome,
         'email' => $email,
-        'document' => [
-            'type' => 'cpf',
-            'number' => $cpf
-        ]
-    ]
+        'document' => $cpf,
+        'phone' => preg_replace('/[^0-9]/', '', $telefone)
+    ],
+    'products' => $products,
+    'metadata' => $metadata
 ];
 
 // Log do payload antes da chamada
-file_put_contents('payment_payload.log', date('Y-m-d H:i:s') . " - Payload: " . json_encode($payload, JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
+file_put_contents('payment_payload.log', date('Y-m-d H:i:s') . " - Payload LXPAY: " . json_encode($dadosLxpay, JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
 
-// Fazer a chamada para a NOVA API Monetrix
-$auth = getMonetrixAuth();
-$ch = curl_init(MONETRIX_API_URL);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Authorization: ' . $auth,
-    'Content-Type: application/json',
-    'Accept: application/json'
-]);
+// Instanciar API LXPAY e gerar PIX
+$lxpay = new LxpayApi();
+$resultado = $lxpay->gerarPix($dadosLxpay);
 
-// Adicionar opções para maior robustez
-curl_setopt($ch, CURLOPT_TIMEOUT, 30); // 30 segundos de timeout
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-curl_setopt($ch, CURLOPT_FAILONERROR, false);
-
-// Executar a chamada
-$response = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$error = curl_error($ch);
-curl_close($ch);
-
-// Log da resposta da API
-file_put_contents('monetrix_response.log', date('Y-m-d H:i:s') . " - HTTP: $httpCode, Response: $response, Error: $error\n", FILE_APPEND);
-
-// Verificar se houve erro na chamada
-if ($httpCode < 200 || $httpCode >= 300 || !$response) {
-    http_response_code(500);
+// Verificar resultado
+if (!$resultado['success']) {
+    http_response_code($resultado['http_code'] ?? 500);
     echo json_encode([
         'success' => false,
-        'message' => 'Erro ao gerar PIX: ' . ($error ?: 'Erro na comunicação com o gateway de pagamento'),
-        'http_code' => $httpCode
+        'message' => 'Erro ao gerar PIX: ' . ($resultado['error'] ?? 'Erro na comunicação com o gateway de pagamento'),
+        'http_code' => $resultado['http_code'] ?? 500
     ]);
     exit;
 }
 
-// Decodificar resposta da API
-$responseData = json_decode($response, true);
+// Extrair dados da resposta
+$responseData = $resultado['data'];
+$transactionId = $responseData['transactionId'] ?? null;
+$pixData = $responseData['pix'] ?? null;
+$qrCode = null;
+$qrCodeUrl = null;
 
-// Verificar se a resposta contém os dados necessários
-if (!isset($responseData['id'])) {
+// Extrair código PIX
+if (is_array($pixData)) {
+    $qrCode = $pixData['code'] ?? $pixData['qrcode'] ?? null;
+} elseif (is_string($pixData)) {
+    $qrCode = $pixData;
+}
+
+// Gerar URL do QR Code se não fornecida
+if (empty($qrCodeUrl) && !empty($qrCode)) {
+    $qrCodeUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' . urlencode($qrCode);
+}
+
+if (empty($transactionId)) {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Resposta inválida do gateway de pagamento',
+        'message' => 'Transaction ID não retornado pela API LXPAY',
         'response' => $responseData
     ]);
     exit;
@@ -352,8 +328,8 @@ try {
     )");
     
     $stmt->execute([
-        'transaction_id' => $responseData['id'],
-        'external_ref' => $externalRef,
+        'transaction_id' => $transactionId,
+        'external_ref' => 'pix_' . time() . '_' . substr(md5(uniqid()), 0, 8),
         'status' => 'pending',
         'valor' => $valorTotal,
         'cliente' => json_encode(['nome' => $nome, 'email' => $email, 'telefone' => $telefone, 'cpf' => $cpf]),
@@ -374,7 +350,7 @@ try {
 
 // Preparar dados para UTMify
 $utmifyData = [
-    'orderId' => $responseData['id'],
+    'orderId' => $transactionId,
     'platform' => 'PhamelaGourmet',
     'paymentMethod' => 'pix',
     'status' => 'waiting_payment',
@@ -420,16 +396,16 @@ $utmifyData = [
 ];
 
 // Enviar notificação para UTMify (status: pending)
-$utmifyResult = enviarNotificacaoUTMify($responseData['id'], 'pending', $utmifyData);
+$utmifyResult = enviarNotificacaoUTMify($transactionId, 'pending', $utmifyData);
 file_put_contents('utmify_result.log', date('Y-m-d H:i:s') . " - " . json_encode($utmifyResult) . "\n", FILE_APPEND);
 
 // Retornar os dados do PIX
 $pixData = [
     'success' => true,
-    'transactionId' => $responseData['id'],
+    'transactionId' => $transactionId,
     'pixCode' => $qrCode ?? '',
     'qrCodeUrl' => $qrCodeUrl ?? '',
-    'expiresAt' => $responseData['expiresAt'] ?? (isset($responseData['pix']['expirationDate']) ? $responseData['pix']['expirationDate'] : date('c', strtotime('+60 minutes'))),
+    'expiresAt' => isset($responseData['pix']['expiresAt']) ? $responseData['pix']['expiresAt'] : date('c', strtotime('+60 minutes')),
     'message' => 'PIX gerado com sucesso',
     'cliente' => [
         'nome' => $nome,

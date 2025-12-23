@@ -59,22 +59,10 @@ function gerarCPF() {
 }
 
 try {
-    // Configurações da API Monetrix - Usando variáveis de ambiente
-    $apiUrl = 'https://api.monetrix.store/v1/transactions';
-    $publicKey = getenv('API_KEY') ?: 'pk__qJrExlJeIQpV3RrF157NP-Wk48qlza1_9mHCzo-69AbBsqr';
-    $secretKey = getenv('API_SECRET') ?: 'sk_cS7rqPG-8Q9BGcKy1hWpXJ-m1s3J9mi9s0f2CmvU15AIPcuo';
+    // Carregar configurações da LXPAY
+    require_once __DIR__ . '/../LXPAY/LxpayApi.php';
     
-    // Basic Auth para Monetrix
-    $auth = base64_encode($publicKey . ':' . $secretKey);
-    
-    error_log("[Monetrix] 🔑 Public Key: " . substr($publicKey, 0, 20) . "...");
-    error_log("[Monetrix] 🔑 Secret Key: " . substr($secretKey, 0, 20) . "...");
-    error_log("[Monetrix] 🔑 Auth Header: Basic " . substr($auth, 0, 30) . "...");
-    
-    // Verificar se as credenciais estão corretas
-    if (empty($publicKey) || empty($secretKey)) {
-        throw new Exception("Credenciais da API Monetrix não configuradas");
-    }
+    error_log("[LXPAY] 🚀 Iniciando processamento de pagamento");
 
     // Caminho do banco de dados - Usando variáveis de ambiente para Vercel
     $dbPath = getenv('DB_PATH') ?: __DIR__ . '/database.sqlite'; 
@@ -146,7 +134,7 @@ try {
         return $value !== null && $value !== '';
     });
 
-    error_log("[Monetrix] 📊 Parâmetros UTM recebidos: " . json_encode($utmParams));
+    error_log("[LXPAY] 📊 Parâmetros UTM recebidos: " . json_encode($utmParams));
 
     // Gera dados do cliente se não fornecidos
     if (!$nome_cliente) {
@@ -163,126 +151,95 @@ try {
     
     $email = $email_cliente;
     $cpf = $cpf_cliente ?: gerarCPF();
+    $cpf = preg_replace('/[^0-9]/', '', $cpf);
+    $telefone_limpo = preg_replace('/[^0-9]/', '', $telefone_cliente);
 
-    error_log("[Monetrix] 📝 Preparando dados para envio: " . json_encode([
+    error_log("[LXPAY] 📝 Preparando dados para envio: " . json_encode([
         'valor_centavos' => $valor_centavos,
         'nome' => $nome_cliente,
         'email' => $email,
         'cpf' => $cpf,
-        'telefone' => $telefone_cliente,
+        'telefone' => $telefone_limpo,
         'itens_recebidos' => $itens_carrinho
     ]));
 
-    // Estrutura de dados para Monetrix (baseada no projeto que funciona)
-    $data = [
-        "amount" => $valor_centavos,
-        "paymentMethod" => "pix",
-        "postbackUrl" => "https://" . $_SERVER['HTTP_HOST'] . "/checkout/webhook.php",
-        "externalRef" => uniqid('doacao_'),
-        "metadata" => json_encode($utmParams), // UTMs como metadata JSON string
-        "customer" => [
-            "name" => $nome_cliente,
-            "email" => $email,
-            "phone" => $telefone_cliente,
-            "document" => [
-                "type" => "cpf",
-                "number" => $cpf
-            ]
-        ],
-        "items" => count($itens_carrinho) > 0 ? array_map(function($item) {
-            return [
-                "title" => $item['nome'] ?? 'Produto',
-                "quantity" => $item['quantidade'] ?? 1,
-                "unitPrice" => isset($item['precoPromocional']) ? 
-                    round($item['precoPromocional'] * 100) : 
-                    (isset($item['precoOriginal']) ? round($item['precoOriginal'] * 100) : 1000),
-                "tangible" => true
+    // Converter valor de centavos para decimal (LXPAY espera decimal)
+    $valor_decimal = $valor_centavos / 100;
+
+    // Preparar produtos para LXPAY
+    $products = [];
+    if (count($itens_carrinho) > 0) {
+        foreach ($itens_carrinho as $item) {
+            $preco = isset($item['precoPromocional']) ? 
+                floatval($item['precoPromocional']) : 
+                (isset($item['precoOriginal']) ? floatval($item['precoOriginal']) : ($valor_decimal / count($itens_carrinho)));
+            
+            $products[] = [
+                'id' => $item['id'] ?? uniqid('prod_'),
+                'name' => $item['nome'] ?? 'Produto',
+                'price' => $preco,
+                'quantity' => intval($item['quantidade'] ?? 1)
             ];
-        }, $itens_carrinho) : [
-            [
-                "title" => "Liberação de Benefício",
-                "quantity" => 1,
-                "unitPrice" => $valor_centavos,
-                "tangible" => false
-            ]
+        }
+    }
+
+    // Preparar dados para LXPAY
+    $dadosLxpay = [
+        'amount' => $valor_decimal,
+        'client' => [
+            'name' => $nome_cliente,
+            'email' => $email,
+            'document' => $cpf,
+            'phone' => $telefone_limpo
         ],
-        "pix" => [
-            "expiresIn" => 60 // Expira em 60 minutos
+        'products' => $products,
+        'metadata' => [
+            'utm_params' => $utmParams,
+            'platform' => 'AlphaBurguer'
         ]
     ];
 
-    error_log("[Monetrix] 🌐 URL da requisição: " . $apiUrl);
-    error_log("[Monetrix] 📦 Dados enviados: " . json_encode($data));
+    error_log("[LXPAY] 📦 Dados enviados: " . json_encode($dadosLxpay));
 
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Authorization: ' . $auth,
-        'Content-Type: application/json'
-    ]);
+    // Instanciar API LXPAY e gerar PIX
+    $lxpay = new LxpayApi();
+    $resultado = $lxpay->gerarPix($dadosLxpay);
 
-    curl_setopt($ch, CURLOPT_VERBOSE, true);
-    $verbose = fopen('php://temp', 'w+');
-    curl_setopt($ch, CURLOPT_STDERR, $verbose);
-
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
-    $curlErrno = curl_errno($ch);
-
-    rewind($verbose);
-    $verboseLog = stream_get_contents($verbose);
-    error_log("[Monetrix] 🔍 Detalhes da requisição cURL:\n" . $verboseLog);
-
-    if ($curlError) {
-        error_log("[Monetrix] ❌ Erro cURL: " . $curlError . " (errno: " . $curlErrno . ")");
-        throw new Exception("Erro na requisição: " . $curlError);
+    if (!$resultado['success']) {
+        error_log("[LXPAY] ❌ Erro ao gerar PIX: " . ($resultado['error'] ?? 'Erro desconhecido'));
+        throw new Exception("Erro na API LXPAY: " . ($resultado['error'] ?? 'Erro desconhecido'));
     }
 
-    curl_close($ch);
+    $result = $resultado['data'];
+    $transactionId = $result['transactionId'] ?? null;
+    $pixData = $result['pix'] ?? null;
 
-    error_log("[Monetrix] 📊 HTTP Status Code: " . $httpCode);
-    error_log("[Monetrix] 📄 Resposta bruta: " . $response);
-
-    if ($httpCode !== 200 && $httpCode !== 201) {
-        error_log("[Monetrix] ❌ Erro HTTP: " . $httpCode);
-        error_log("[Monetrix] 📄 Resposta de erro: " . $response);
-        throw new Exception("Erro na API Monetrix: HTTP " . $httpCode . " - " . $response);
-    }
-
-    $result = json_decode($response, true);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        error_log("[Monetrix] ❌ Erro ao decodificar JSON: " . json_last_error_msg());
-        error_log("[Monetrix] 📄 Resposta bruta: " . $response);
-        throw new Exception("Resposta inválida da API: " . json_last_error_msg());
-    }
-
-    if (!$result) {
-        error_log("[Monetrix] ❌ Resposta vazia da API");
-        throw new Exception("Resposta vazia da API Monetrix");
-    }
-
-    // Verificar se a resposta contém os dados necessários
-    if (!isset($result['id'])) {
-        error_log("[Monetrix] ❌ Resposta da API não contém ID da transação");
-        error_log("[Monetrix] 📄 Estrutura recebida: " . print_r($result, true));
+    if (!$transactionId) {
+        error_log("[LXPAY] ❌ Transaction ID não encontrado na resposta");
+        error_log("[LXPAY] 📄 Estrutura recebida: " . print_r($result, true));
         throw new Exception("ID da transação não encontrado na resposta");
     }
 
-    // Verificar se contém dados do PIX
-    if (!isset($result['pix']) || !isset($result['pix']['qrcode'])) {
-        error_log("[Monetrix] ⚠️ Resposta não contém dados do PIX");
-        error_log("[Monetrix] 📄 Estrutura recebida: " . print_r($result, true));
-        // Não é erro fatal, pode ser que o PIX seja gerado depois
+    // Extrair código PIX
+    $pixCode = null;
+    if (is_array($pixData)) {
+        $pixCode = $pixData['code'] ?? $pixData['qrcode'] ?? null;
+    } elseif (is_string($pixData)) {
+        $pixCode = $pixData;
+    }
+
+    error_log("[LXPAY] ✅ Transação criada com sucesso: " . $transactionId);
+    if ($pixCode) {
+        error_log("[LXPAY] ✅ QR Code encontrado: " . substr($pixCode, 0, 50) . "...");
+    } else {
+        error_log("[LXPAY] ⚠️ QR Code não encontrado na resposta");
     }
 
     // Salva os dados no SQLite
     $stmt = $db->prepare("INSERT INTO pedidos (transaction_id, status, valor, nome, email, cpf, utm_params, created_at) 
         VALUES (:transaction_id, 'pending', :valor, :nome, :email, :cpf, :utm_params, :created_at)");
     $stmt->execute([
-        'transaction_id' => $result['id'],
+        'transaction_id' => $transactionId,
         'valor' => $valor_centavos,
         'nome' => $nome_cliente,
         'email' => $email,
@@ -292,17 +249,16 @@ try {
     ]);
 
     session_start();
-    $_SESSION['payment_id'] = $result['id'];
+    $_SESSION['payment_id'] = $transactionId;
 
-    error_log("[Monetrix] 💳 Transação criada com sucesso: " . $result['id']);
-    error_log("[Monetrix] 📄 Resposta completa da API: " . $response);
-    error_log("[Monetrix] 🔑 Token gerado: " . $result['id']);
+    error_log("[LXPAY] 💳 Transação criada com sucesso: " . $transactionId);
+    error_log("[LXPAY] 🔑 Token gerado: " . $transactionId);
 
     error_log("[Sistema] 📡 Iniciando comunicação com utmify-pendente.php");
 
     $utmifyData = [
-        'orderId' => $result['id'],
-        'platform' => 'Monetrix',
+        'orderId' => $transactionId,
+        'platform' => 'LXPAY',
         'paymentMethod' => 'pix',
         'status' => 'waiting_payment',
         'createdAt' => date('Y-m-d H:i:s'),
@@ -415,17 +371,21 @@ try {
         error_log("[Monetrix] 📄 Estrutura completa da resposta: " . print_r($result, true));
     }
 
-    // Preparar resposta adaptada para Monetrix
+    // Preparar resposta adaptada para LXPAY
+    $qrCodeUrl = $pixCode ? 
+        'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' . urlencode($pixCode) : 
+        null;
+    
     $responseData = [
         'success' => true,
-        'token' => $result['id'],
+        'token' => $transactionId,
+        'transactionId' => $transactionId,
         'pixCode' => $pixCode,
-        'qrCodeUrl' => $pixCode ? 
-            'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' . urlencode($pixCode) : 
-            null,
+        'qrcode' => $pixCode,
+        'qrCodeUrl' => $qrCodeUrl,
+        'qr_code_image_url' => $qrCodeUrl,
         'valor' => $valor_centavos,
-        'expiresAt' => $result['expiresAt'] ?? null,
-        'status' => $result['status'] ?? 'pending',
+        'status' => 'pending',
         'logs' => [
             'utmParams' => $utmParams,
             'transacao' => [

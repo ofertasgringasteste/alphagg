@@ -300,7 +300,7 @@
 
         if (resposta.success) {
           // Salvar token da transação no localStorage - usar o campo correto da resposta
-          const transactionId = resposta.transactionId || resposta.token || resposta.monetrixId;
+          const transactionId = resposta.transactionId || resposta.token;
           localStorage.setItem('upsell1_token', transactionId);
           localStorage.setItem('transactionId', transactionId); // Para uso no Facebook Pixel
           
@@ -321,7 +321,7 @@
           }
           
           // Iniciar verificação de pagamento - usar o ID correto
-          iniciarVerificacaoPagamento(resposta.transactionId || resposta.token || resposta.monetrixId);
+          iniciarVerificacaoPagamento(resposta.transactionId || resposta.token);
         } else {
           throw new Error(resposta.message || 'Erro ao gerar PIX');
         }

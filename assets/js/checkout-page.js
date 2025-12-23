@@ -314,39 +314,7 @@ async function iniciarPagamentoPixPage() {
             }
         } catch (fetchError) {
             console.error("Erro na requisição fetch:", fetchError);
-            
-            try {
-                // Tentar rota alternativa (fallback para Abyssal Pay se necessário)
-                console.log("Tentando rota alternativa (Abyssal Pay)...");
-                const alternativeUrl = window.location.pathname.includes('/checkout.html') ? 
-                    'api/checkout/abyssalpay-pagamento.js' : 
-                    'api/checkout/abyssalpay-pagamento.js';
-                
-                const alternativeResponse = await fetch(alternativeUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(dadosPagamento)
-                });
-                
-                if (!alternativeResponse.ok) {
-                    throw new Error(`Erro na API alternativa: ${alternativeResponse.status}`);
-                }
-                
-                const alternativeData = await alternativeResponse.json();
-                console.log("Resposta da API alternativa:", alternativeData);
-                
-                if (alternativeData.success) {
-                    exibirPixGeradoPage(alternativeData);
-                    iniciarVerificacaoPagamentoPage(alternativeData.transactionId || alternativeData.token);
-                } else {
-                    throw new Error(alternativeData.message || 'Erro ao gerar PIX (rota alternativa)');
-                }
-            } catch (alternativeError) {
-                console.error("Erro na rota alternativa:", alternativeError);
-                throw new Error("Erro ao gerar PIX: " + alternativeError.message);
-            }
+            throw new Error("Erro ao gerar PIX: " + fetchError.message);
         }
     } catch (error) {
         console.error('Erro ao gerar PIX:', error);
@@ -703,75 +671,3 @@ window.addEventListener('beforeunload', function () {
         clearInterval(intervalVerificacaoPage);
     }
 });
-
-// Função para chamar diretamente a API Monetrix (Fallback)
-async function chamarAPIMonetrixDireta(dadosPagamento) {
-    console.log("Executando fallback direto para API Monetrix...");
-    
-    // Calcular valor total em centavos
-    const valorTotal = Math.round(dadosPagamento.resumo.total * 100);
-    
-    // Preparar payload no formato original da API
-    const payloadMonetrix = {
-        "amount": valorTotal,
-        "currency": "BRL",
-        "paymentMethod": "pix",
-        "pix": {
-            "expiresIn": 60
-        },
-        "items": dadosPagamento.itens.map(item => ({
-            "title": item.nome || "Produto",
-            "unitPrice": Math.round((item.precoPromocional || item.precoUnitario || 0) * 100),
-            "quantity": item.quantidade || 1,
-            "tangible": false
-        })),
-        "customer": {
-            "name": dadosPagamento.cliente.nome || "Fernando Alves",
-            "email": dadosPagamento.cliente.email || "shpf0001@gmail.com",
-            "document": {
-                "type": "cpf",
-                "number": dadosPagamento.cliente.cpf?.replace(/[^0-9]/g, '') || "90283363207"
-            }
-        }
-    };
-    
-    console.log("Payload para API Monetrix:", payloadMonetrix);
-    
-    try {
-        // Fazer requisição direta para API Monetrix
-        const response = await fetch('https://api.monetrix.store/v1/transactions', {
-            method: 'POST',
-            headers: {
-                'accept': 'application/json',
-                'authorization': 'Basic ' + btoa('pk_ouwx4hvdzP2IcG-qH-KG4tBeF7_rhkba_HYje6SsTjHo5umn:sk__Q39xQdSt6qPoM9gOBb5EKXeG0i-3Fo1pMP77BiWS7Fygjng'),
-                'content-type': 'application/json'
-            },
-            body: JSON.stringify(payloadMonetrix)
-        });
-        
-        const responseData = await response.json();
-        console.log("Resposta da API Monetrix:", responseData);
-        
-        if (response.ok && responseData.id) {
-            // Extrair dados do PIX da resposta
-            const pixCode = responseData.pix?.qrcode || responseData.pix?.qr_code || responseData.pixCode || '';
-            const qrCodeUrl = responseData.pix?.imageUrl || responseData.pix?.image_url || 
-                            (pixCode ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(pixCode)}` : '');
-            
-            return {
-                success: true,
-                transactionId: responseData.id,
-                pixCode: pixCode,
-                qrCodeUrl: qrCodeUrl,
-                amount: valorTotal / 100,
-                status: responseData.status || 'pending',
-                message: 'PIX gerado via fallback direto para API Monetrix'
-            };
-        } else {
-            throw new Error(responseData.message || `Erro HTTP ${response.status}`);
-        }
-    } catch (error) {
-        console.error("Erro na chamada direta da API Monetrix:", error);
-        throw new Error("Falha na comunicação com API Monetrix: " + error.message);
-    }
-}

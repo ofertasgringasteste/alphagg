@@ -4,8 +4,8 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Carregar configurações da nova API Monetrix
-require_once __DIR__ . '/monetrix_config.php';
+// Carregar configurações da API LXPAY
+require_once __DIR__ . '/LXPAY/LxpayApi.php';
 
 // Preparar diretório de logs
 $logDir = __DIR__ . '/logs';
@@ -59,8 +59,8 @@ try {
         $db = new PDO("sqlite:$dbPath");
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         
-        // Primeiro, tentar encontrar a transação pelo ID da transação local
-        $stmt = $db->prepare("SELECT * FROM pedidos WHERE transaction_id = :id OR monetrix_id = :id LIMIT 1");
+        // Buscar transação pelo transaction_id
+        $stmt = $db->prepare("SELECT * FROM pedidos WHERE transaction_id = :id LIMIT 1");
         $stmt->execute(['id' => $id]);
         $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -73,83 +73,80 @@ try {
                     'success' => true,
                     'status' => 'paid',
                     'transaction_id' => $transaction['transaction_id'],
-                    'monetrix_id' => $transaction['monetrix_id'],
                     'updated_at' => $transaction['updated_at'],
                     'source' => 'database'
                 ]);
                 exit;
             }
             
-            // Se tiver monetrix_id, consultar API da Monetrix para status atualizado
-            if (!empty($transaction['monetrix_id'])) {
-                $monetrixId = $transaction['monetrix_id'];
-                logDebug("Consultando API da Monetrix para o ID: $monetrixId");
+            // Consultar API LXPAY para status atualizado
+            logDebug("Consultando API LXPAY para o ID: " . $transaction['transaction_id']);
+            
+            $lxpay = new LxpayApi();
+            $resultado = $lxpay->consultarTransacao($transaction['transaction_id']);
+            
+            if ($resultado['success']) {
+                $apiData = $resultado['data'];
+                $apiStatus = $apiData['status'] ?? 'unknown';
                 
-                // Usar nova autenticação da API Monetrix
-                $auth = getMonetrixAuth();
+                // Mapear status LXPAY para status do sistema
+                $statusUpper = strtoupper($apiStatus);
+                $statusSistema = 'pending';
                 
-                // Iniciar a requisição cURL para a API da Monetrix
-                $ch = curl_init(MONETRIX_API_URL . '/' . $monetrixId);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                    'Content-Type: application/json',
-                    'Authorization: Basic ' . $auth
-                ]);
+                switch ($statusUpper) {
+                    case 'PAID':
+                    case 'CONFIRMED':
+                    case 'OK':
+                    case 'COMPLETED':
+                        $statusSistema = 'paid';
+                        break;
+                    case 'PENDING':
+                    case 'WAITING':
+                        $statusSistema = 'pending';
+                        break;
+                    case 'CANCELLED':
+                    case 'CANCELED':
+                        $statusSistema = 'cancelled';
+                        break;
+                    case 'EXPIRED':
+                        $statusSistema = 'expired';
+                        break;
+                    case 'FAILED':
+                    case 'ERROR':
+                        $statusSistema = 'failed';
+                        break;
+                }
                 
-                // Executar a requisição
-                $response = curl_exec($ch);
-                $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                curl_close($ch);
-                
-                logDebug("Resposta da API Monetrix: $http_code - $response");
-                
-                if ($http_code === 200) {
-                    $monetrix_data = json_decode($response, true);
-                    $api_status = $monetrix_data['status'] ?? 'unknown';
-                    
-                    // Atualizar o status no banco de dados se for diferente
-                    if ($api_status !== $transaction['status']) {
-                        $updateStmt = $db->prepare("UPDATE pedidos SET status = :status, updated_at = :updated_at WHERE transaction_id = :transaction_id");
-                        $updateStmt->execute([
-                            'status' => $api_status,
-                            'updated_at' => date('Y-m-d H:i:s'),
-                            'transaction_id' => $transaction['transaction_id']
-                        ]);
-                        logDebug("Status atualizado no banco de dados: " . $api_status);
-}
-
-                    // Retornar o status da API
-                    echo json_encode([
-                        'success' => true,
-                        'status' => $api_status,
-                        'transaction_id' => $transaction['transaction_id'],
-                        'monetrix_id' => $monetrixId,
+                // Atualizar o status no banco de dados se for diferente
+                if ($statusSistema !== $transaction['status']) {
+                    $updateStmt = $db->prepare("UPDATE pedidos SET status = :status, updated_at = :updated_at WHERE transaction_id = :transaction_id");
+                    $updateStmt->execute([
+                        'status' => $statusSistema,
                         'updated_at' => date('Y-m-d H:i:s'),
-                        'source' => 'api'
+                        'transaction_id' => $transaction['transaction_id']
                     ]);
-                    exit;
-                } else {
-                    logDebug("Erro ao consultar API da Monetrix. Usando status do banco");
-                    // Se houver erro na API, retornar o status do banco de dados
-                    echo json_encode([
-                        'success' => true,
-                        'status' => $transaction['status'],
-                        'transaction_id' => $transaction['transaction_id'],
-                        'monetrix_id' => $transaction['monetrix_id'],
-                        'updated_at' => $transaction['updated_at'],
-                        'source' => 'database_fallback',
-                        'api_error' => 'API da Monetrix retornou código ' . $http_code
-                    ]);
-                    exit;
-        }
+                    logDebug("Status atualizado no banco de dados: " . $statusSistema);
+                }
+                
+                // Retornar o status da API
+                echo json_encode([
+                    'success' => true,
+                    'status' => $statusSistema,
+                    'transaction_id' => $transaction['transaction_id'],
+                    'updated_at' => date('Y-m-d H:i:s'),
+                    'source' => 'api'
+                ]);
+                exit;
             } else {
-                // Se não tiver monetrix_id, retornar o status do banco de dados
+                logDebug("Erro ao consultar API LXPAY. Usando status do banco");
+                // Se houver erro na API, retornar o status do banco de dados
                 echo json_encode([
                     'success' => true,
                     'status' => $transaction['status'],
                     'transaction_id' => $transaction['transaction_id'],
                     'updated_at' => $transaction['updated_at'],
-                    'source' => 'database_only'
+                    'source' => 'database_fallback',
+                    'api_error' => $resultado['error'] ?? 'Erro desconhecido'
                 ]);
                 exit;
             }
@@ -158,48 +155,60 @@ try {
     }
     
     // Se chegou aqui, ou não tem banco de dados ou não encontrou a transação
-    // Tentar consultar diretamente na API da Monetrix (assumindo que id é um ID da Monetrix)
-    logDebug("Transação não encontrada no banco de dados. Consultando API diretamente: $id");
+    // Tentar consultar diretamente na API LXPAY
+    logDebug("Transação não encontrada no banco de dados. Consultando API LXPAY diretamente: $id");
+    
+    $lxpay = new LxpayApi();
+    $resultado = $lxpay->consultarTransacao($id);
+    
+    if ($resultado['success']) {
+        $apiData = $resultado['data'];
+        $apiStatus = $apiData['status'] ?? 'unknown';
         
-    // Codificar as credenciais para autenticação Basic
-    $auth = base64_encode(MONETRIX_PUBLIC_KEY . ':' . MONETRIX_SECRET_KEY);
-    
-    // Iniciar a requisição cURL para a API da Monetrix
-    $ch = curl_init(MONETRIX_API_URL . '/' . $id);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'Authorization: Basic ' . $auth
-    ]);
-    
-    // Executar a requisição
-    $response = curl_exec($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    
-    logDebug("Resposta direta da API: $http_code - $response");
-    
-    if ($http_code === 200) {
-        $monetrix_data = json_decode($response, true);
-        $api_status = $monetrix_data['status'] ?? 'unknown';
+        // Mapear status
+        $statusUpper = strtoupper($apiStatus);
+        $statusSistema = 'pending';
+        
+        switch ($statusUpper) {
+            case 'PAID':
+            case 'CONFIRMED':
+            case 'OK':
+            case 'COMPLETED':
+                $statusSistema = 'paid';
+                break;
+            case 'PENDING':
+            case 'WAITING':
+                $statusSistema = 'pending';
+                break;
+            case 'CANCELLED':
+            case 'CANCELED':
+                $statusSistema = 'cancelled';
+                break;
+            case 'EXPIRED':
+                $statusSistema = 'expired';
+                break;
+            case 'FAILED':
+            case 'ERROR':
+                $statusSistema = 'failed';
+                break;
+        }
         
         echo json_encode([
             'success' => true,
-            'status' => $api_status,
-            'transaction_id' => $monetrix_data['externalRef'] ?? $id,
-            'monetrix_id' => $id,
+            'status' => $statusSistema,
+            'transaction_id' => $id,
             'updated_at' => date('Y-m-d H:i:s'),
             'source' => 'api_direct'
         ]);
-        } else {
+    } else {
         // Se não encontrou na API, retornar erro
         http_response_code(404);
         echo json_encode([
             'success' => false,
             'message' => 'Transação não encontrada',
-            'api_error' => 'API da Monetrix retornou código ' . $http_code
+            'api_error' => $resultado['error'] ?? 'Erro desconhecido'
         ]);
-        }
+    }
     } catch (Exception $e) {
     logDebug("Erro: " . $e->getMessage());
     http_response_code(500);

@@ -304,7 +304,7 @@ window.utmifyEvents = new UTMifyEvents();
                 
                 window.utmifyEvents.enviarPixGerado({
                     token: dadosPix.token,                              // String como orderId
-                    transactionId: dadosPix.transactionId || dadosPix.monetrixId,
+                    transactionId: dadosPix.transactionId || dadosPix.token,
                     amount: dadosPix.amount,
                     customer: customerData
                 });
