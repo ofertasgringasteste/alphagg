@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 
 // Configurações UTMify
 define('UTMIFY_API_URL', 'https://api.utmify.com.br/api-credentials/orders');
-define('UTMIFY_API_TOKEN', 'WSVQwG52pAWTHXZxG0Aeza5wcuLtA4jFS9xq');
+define('UTMIFY_API_TOKEN', 'P451K2gkmXTpXoryz4gH8JUlMwEAA8cY0UEQ');
 
 // Preparar diretório de logs
 $logDir = __DIR__ . '/logs';
