@@ -8,8 +8,20 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Open+Sans&display=swap" rel="stylesheet"/>
   
+  <!-- UTMify Script -->
+  <script
+      src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+      data-utmify-prevent-xcod-sck
+      data-utmify-prevent-subids
+      async
+      defer
+  ></script>
+  
   <!-- Facebook Pixel -->
   <script src="assets/js/facebook-pixel.js" defer></script>
+  
+  <!-- UTMify Events -->
+  <script src="assets/js/utm/utmify-events.js" defer></script>
   
   <style>
    body {
@@ -49,7 +61,7 @@
       </h2>
       
       <div class="flex justify-center mb-4">
-        <img src="assets/img/hamburgueria/Milkshake_ovomaltine.jpg" alt="Milkshake de Ovomaltine" class="w-48 h-auto rounded-lg shadow-md">
+        <img src="assets/img/produtos/Milkshake_ovomaltine.jpg" alt="Milkshake de Ovomaltine" class="w-48 h-auto rounded-lg shadow-md">
       </div>
       
       <p class="text-gray-700 mb-4">
@@ -202,7 +214,7 @@
       quantidade: 1,
       precoOriginal: 20.50,
       precoPromocional: 12.30,
-      imagem: 'assets/img/hamburgueria/Milkshake_ovomaltine.jpg'
+      imagem: 'assets/img/produtos/Milkshake_ovomaltine.jpg'
     };
 
     const confirmBtn = document.getElementById('confirmBtn');
@@ -265,7 +277,7 @@
         dadosPagamento.utmParams = utmParams;
 
         // Fazer a requisição para a API
-        const response = await fetch('checkout/pagamento.php', {
+        const response = await fetch('api/LXPAY/gerar_pix.js', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -274,7 +286,15 @@
         });
 
         if (!response.ok) {
-          throw new Error(`Erro na API: ${response.status} ${response.statusText}`);
+          const errorText = await response.text();
+          let errorMessage = `Erro na API: ${response.status} ${response.statusText}`;
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage = errorText || errorMessage;
+          }
+          throw new Error(errorMessage);
         }
 
         const resposta = await response.json();
@@ -294,8 +314,8 @@
             qrCodeImage.src = resposta.qrCodeUrl;
           }
           
-          // O código PIX pode estar em campos diferentes dependendo da API
-          const pixCode = resposta.pixCode || resposta.code || resposta.pix?.code || resposta.qrCode || resposta.qrcode;
+          // O código PIX vem no campo pixCode da API LXPAY
+          const pixCode = resposta.pixCode || resposta.qrcode || resposta.pix?.code || null;
           if (pixCode) {
             codigoPix.value = pixCode;
           } else {
@@ -371,7 +391,7 @@
 
         try {
           // Fazer chamada real para API de verificação
-          const response = await fetch(`checkout/verificar.php?id=${transactionId}`);
+          const response = await fetch(`api/LXPAY/verificar.js?id=${transactionId}`);
           if (!response.ok) {
             throw new Error(`Erro na API de verificação: ${response.status}`);
           }

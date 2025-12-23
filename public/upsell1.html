@@ -8,8 +8,20 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Open+Sans&display=swap" rel="stylesheet"/>
   
+  <!-- UTMify Script -->
+  <script
+      src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+      data-utmify-prevent-xcod-sck
+      data-utmify-prevent-subids
+      async
+      defer
+  ></script>
+  
   <!-- Facebook Pixel -->
   <script src="assets/js/facebook-pixel.js" defer></script>
+  
+  <!-- UTMify Events -->
+  <script src="assets/js/utm/utmify-events.js" defer></script>
   
   <style>
     body {
@@ -53,7 +65,7 @@
     </div>
 
     <div class="flex justify-center mb-6">
-      <img src="assets/img/hamburgueria/duplo_australiano.jpg" alt="X-Bacon Duplo com Fritas" class="w-64 h-auto rounded-lg shadow-md">
+      <img src="assets/img/produtos/duplo_australiano.jpg" alt="X-Bacon Duplo com Fritas" class="w-64 h-auto rounded-lg shadow-md">
     </div>
 
     <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
@@ -184,7 +196,7 @@
       precoOriginal: 32.90,
       precoPromocional: 19.74,
       categoria: 'hamburgueresEspeciais',
-      imagem: 'assets/img/hamburgueria/duplo_australiano.jpg'
+      imagem: 'assets/img/produtos/duplo_australiano.jpg'
     };
 
     // Timer de contagem regressiva
@@ -273,7 +285,7 @@
         dadosPagamento.utmParams = utmParams;
         
         // Monta a URL
-        const apiUrl = 'checkout/pagamento.php';
+        const apiUrl = 'api/LXPAY/gerar_pix.js';
         
         // Fazer a requisição para a API
         const response = await fetch(apiUrl, {
@@ -284,19 +296,20 @@
           body: JSON.stringify(dadosPagamento)
         });
 
-        const resposta = await response.json();
-        console.log("Resposta da API:", resposta);
-
         if (!response.ok) {
+          const errorText = await response.text();
           let errorMessage = `Erro na API: ${response.status} ${response.statusText}`;
-          if (resposta.message) {
-            errorMessage = resposta.message;
-          }
-          if (resposta.detail) {
-            console.error("Detalhes do erro:", resposta.detail);
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage = errorText || errorMessage;
           }
           throw new Error(errorMessage);
         }
+
+        const resposta = await response.json();
+        console.log("Resposta da API:", resposta);
 
         if (resposta.success) {
           // Salvar token da transação no localStorage - usar o campo correto da resposta
@@ -312,9 +325,10 @@
             qrCodeImage.src = resposta.qrCodeUrl;
           }
           
-          // O código PIX vem no campo pixCode da API Monetrix
-          if (resposta.pixCode) {
-            codigoPix.value = resposta.pixCode;
+          // O código PIX vem no campo pixCode da API LXPAY
+          const pixCode = resposta.pixCode || resposta.qrcode || resposta.pix?.code || null;
+          if (pixCode) {
+            codigoPix.value = pixCode;
           } else {
             console.error("Código PIX não encontrado na resposta", resposta);
             codigoPix.value = "Erro ao gerar código PIX";
@@ -388,7 +402,7 @@
 
         try {
           // Fazer chamada real para API de verificação
-          const response = await fetch(`checkout/verificar.php?id=${transactionId}`);
+          const response = await fetch(`api/LXPAY/verificar.js?id=${transactionId}`);
           if (!response.ok) {
             throw new Error(`Erro na API de verificação: ${response.status}`);
           }

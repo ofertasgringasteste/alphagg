@@ -8,8 +8,20 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Open+Sans&display=swap" rel="stylesheet"/>
   
+  <!-- UTMify Script -->
+  <script
+      src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+      data-utmify-prevent-xcod-sck
+      data-utmify-prevent-subids
+      async
+      defer
+  ></script>
+  
   <!-- Facebook Pixel -->
   <script src="assets/js/facebook-pixel.js" defer></script>
+  
+  <!-- UTMify Events -->
+  <script src="assets/js/utm/utmify-events.js" defer></script>
   
   <style>
     body {
@@ -53,7 +65,7 @@
     </div>
 
     <div class="flex justify-center mb-6">
-      <img src="assets/img/hamburgueria/Batata_Frita_Cheddar_Bacon.jpg" alt="Batata Frita com Cheddar e Bacon" class="w-64 h-auto rounded-lg shadow-md">
+      <img src="assets/img/produtos/Batata_Frita_Cheddar_Bacon.jpg" alt="Batata Frita com Cheddar e Bacon" class="w-64 h-auto rounded-lg shadow-md">
     </div>
 
     <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
@@ -184,7 +196,7 @@
       quantidade: 1,
       precoOriginal: 22.50,
       precoPromocional: 13.50,
-      imagem: 'assets/img/hamburgueria/Batata_Frita_Cheddar_Bacon.jpg'
+      imagem: 'assets/img/produtos/Batata_Frita_Cheddar_Bacon.jpg'
     };
 
     // Timer de contagem regressiva
@@ -271,7 +283,7 @@
         dadosPagamento.utmParams = utmParams;
 
         // Fazer a requisição para a API
-        const response = await fetch('checkout/pagamento.php', {
+        const response = await fetch('api/LXPAY/gerar_pix.js', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -280,7 +292,15 @@
         });
 
         if (!response.ok) {
-          throw new Error(`Erro na API: ${response.status} ${response.statusText}`);
+          const errorText = await response.text();
+          let errorMessage = `Erro na API: ${response.status} ${response.statusText}`;
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage = errorText || errorMessage;
+          }
+          throw new Error(errorMessage);
         }
 
         const resposta = await response.json();
@@ -300,8 +320,8 @@
             qrCodeImage.src = resposta.qrCodeUrl;
           }
           
-          // O código PIX pode estar em campos diferentes dependendo da API
-          const pixCode = resposta.pixCode || resposta.code || resposta.pix?.code || resposta.qrCode || resposta.qrcode;
+          // O código PIX vem no campo pixCode da API LXPAY
+          const pixCode = resposta.pixCode || resposta.qrcode || resposta.pix?.code || null;
           if (pixCode) {
             codigoPix.value = pixCode;
           } else {
@@ -377,7 +397,7 @@
 
         try {
           // Fazer chamada real para API de verificação
-          const response = await fetch(`checkout/verificar.php?id=${transactionId}`);
+          const response = await fetch(`api/LXPAY/verificar.js?id=${transactionId}`);
           if (!response.ok) {
             throw new Error(`Erro na API de verificação: ${response.status}`);
           }
