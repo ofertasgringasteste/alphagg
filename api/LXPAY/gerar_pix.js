@@ -366,7 +366,10 @@ function getBaseUrl(req) {
  * Handler principal da serverless function
  */
 export default async function handler(req, res) {
-    // CORS headers
+    // Log inicial para debug
+    console.log(`[gerar_pix.js] 📥 Requisição recebida - Método: ${req.method}, URL: ${req.url}`);
+    
+    // CORS headers - devem ser enviados primeiro
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
@@ -375,11 +378,13 @@ export default async function handler(req, res) {
     
     // Handle preflight OPTIONS request
     if (req.method === 'OPTIONS') {
+        console.log('[gerar_pix.js] ✅ OPTIONS preflight - retornando 200');
         return res.status(200).end();
     }
     
     // Apenas aceita POST
     if (req.method !== 'POST') {
+        console.error(`[gerar_pix.js] ❌ Método não permitido: ${req.method}`);
         return res.status(405).json({
             success: false,
             error: 'Método não permitido. Use POST.'
