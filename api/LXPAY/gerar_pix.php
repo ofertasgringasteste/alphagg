@@ -104,10 +104,10 @@ try {
     // Limpar CPF (remover formatação)
     $cpf_cliente = preg_replace('/[^0-9]/', '', $cpf_cliente);
     
-    // Validar CPF antes de enviar (a classe LxpayApi também valida, mas melhor validar antes)
-    if (strlen($cpf_cliente) !== 11) {
-        error_log("[LXPAY] ❌ CPF inválido (tamanho): $cpf_cliente");
-        throw new Exception('CPF deve conter 11 dígitos');
+    // Validar tamanho do CPF
+    if (!empty($cpf_cliente) && strlen($cpf_cliente) !== 11) {
+        error_log("[LXPAY] ❌ CPF inválido (tamanho): $cpf_cliente (tamanho: " . strlen($cpf_cliente) . ")");
+        // Não lançar exceção, deixar a classe LxpayApi validar (ela pode gerar um CPF válido se necessário)
     }
     
     // Limpar telefone

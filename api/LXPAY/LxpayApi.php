@@ -148,6 +148,13 @@ class LxpayApi {
     private function fazerRequisicao($endpoint, $method = 'GET', $data = null) {
         $url = $this->baseUrl . $endpoint;
         
+        // Log da requisição
+        error_log("[LXPAY API] 🌐 URL: $url");
+        error_log("[LXPAY API] 📝 Método: $method");
+        if ($data) {
+            error_log("[LXPAY API] 📦 Payload: " . json_encode($data, JSON_UNESCAPED_UNICODE));
+        }
+        
         $ch = curl_init($url);
         
         $headers = [
@@ -175,6 +182,13 @@ class LxpayApi {
         
         curl_close($ch);
         
+        // Log da resposta
+        error_log("[LXPAY API] 📊 HTTP Code: $httpCode");
+        error_log("[LXPAY API] 📄 Response: " . substr($response, 0, 500));
+        if ($error) {
+            error_log("[LXPAY API] ❌ cURL Error: $error");
+        }
+        
         if ($error) {
             return [
                 'success' => false,
@@ -185,6 +199,12 @@ class LxpayApi {
         
         $responseData = json_decode($response, true);
         
+        // Se não conseguiu decodificar JSON, logar resposta bruta
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            error_log("[LXPAY API] ❌ Erro ao decodificar JSON: " . json_last_error_msg());
+            error_log("[LXPAY API] 📄 Resposta bruta: " . $response);
+        }
+        
         if ($httpCode >= 200 && $httpCode < 300) {
             return [
                 'success' => true,
@@ -192,11 +212,13 @@ class LxpayApi {
                 'http_code' => $httpCode
             ];
         } else {
+            $errorMsg = $responseData['message'] ?? $responseData['error'] ?? 'Erro desconhecido';
+            error_log("[LXPAY API] ❌ Erro HTTP $httpCode: $errorMsg");
             return [
                 'success' => false,
-                'error' => $responseData['message'] ?? 'Erro desconhecido',
-                'error_code' => $responseData['errorCode'] ?? null,
-                'details' => $responseData['details'] ?? null,
+                'error' => $errorMsg,
+                'error_code' => $responseData['errorCode'] ?? $responseData['error_code'] ?? null,
+                'details' => $responseData['details'] ?? $responseData ?? null,
                 'http_code' => $httpCode,
                 'response' => $responseData
             ];
