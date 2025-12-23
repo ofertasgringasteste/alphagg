@@ -428,7 +428,7 @@ function iniciarVerificacaoPagamentoPage(transactionId) {
 
         try {
             // Fazer chamada real para API de verificação
-            const response = await fetch(`api/LXPAY/verificar.php?id=${transactionId}`);
+            const response = await fetch(`api/LXPAY/verificar.js?id=${transactionId}`);
             if (!response.ok) {
                 throw new Error(`Erro na API de verificação: ${response.status}`);
             }
