@@ -7,12 +7,7 @@
       "maxDuration": 30
     }
   },
-  "rewrites": [
-    {
-      "source": "/api/LXPAY/(.*)",
-      "destination": "/api/LXPAY/$1"
-    }
-  ],
+  "rewrites": [],
   "headers": [
     {
       "source": "/api/(.*)",
