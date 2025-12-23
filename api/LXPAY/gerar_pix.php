@@ -53,7 +53,8 @@ try {
     
     // Extrair dados do formato do checkout
     // Suporta tanto formato direto quanto formato com objeto 'cliente'
-    $valor_centavos = isset($dados['valor']) ? intval($dados['valor']) : 0;
+    // Usa round() para evitar problemas com imprecisão de ponto flutuante (ex: 3234.0000000000005)
+    $valor_centavos = isset($dados['valor']) ? round(floatval($dados['valor'])) : 0;
     $nome_cliente = $dados['nome'] ?? $dados['cliente']['nome'] ?? null;
     $email_cliente = $dados['email'] ?? $dados['cliente']['email'] ?? null;
     $cpf_cliente = $dados['cpf'] ?? $dados['cliente']['cpf'] ?? null;
