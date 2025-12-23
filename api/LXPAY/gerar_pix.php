@@ -179,6 +179,17 @@ try {
     $dadosLxpay['metadata'] = $metadata;
     
     // ============================================
+    // GERAR IDENTIFIER (OBRIGATÓRIO)
+    // ============================================
+    
+    // Gerar identifier único conforme especificação da API (26-35 caracteres)
+    $lxpay = new LxpayApi();
+    $identifier = $lxpay->gerarIdentifier();
+    $dadosLxpay['identifier'] = $identifier;
+    
+    error_log("[LXPAY] 🔑 Identifier gerado: $identifier");
+    
+    // ============================================
     // CONECTAR AO BANCO DE DADOS SQLite
     // ============================================
     
@@ -210,7 +221,6 @@ try {
     // Log dos dados que serão enviados para LXPAY
     error_log("[LXPAY] 📤 Dados preparados para LXPAY: " . json_encode($dadosLxpay, JSON_UNESCAPED_UNICODE));
     
-    $lxpay = new LxpayApi();
     $resultado = $lxpay->gerarPix($dadosLxpay);
     
     // Log da resposta
