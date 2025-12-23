@@ -36,6 +36,19 @@ try {
     // Log para debug
     error_log("[LXPAY] 📥 Dados recebidos: " . substr($input, 0, 500));
     
+    // Verificar se houve erro no JSON decode
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        $jsonError = json_last_error_msg();
+        error_log("[LXPAY] ❌ Erro ao decodificar JSON: $jsonError");
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error' => 'JSON inválido: ' . $jsonError,
+            'message' => 'Erro ao processar dados da requisição'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    
     // Se não veio JSON, tenta pegar do $_POST
     if (empty($dados)) {
         $dados = $_POST;
@@ -44,7 +57,13 @@ try {
     // Validações básicas
     if (empty($dados)) {
         error_log("[LXPAY] ❌ Dados vazios");
-        throw new Exception('Dados não fornecidos');
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Dados não fornecidos',
+            'message' => 'Nenhum dado foi enviado na requisição'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
     }
     
     // ============================================
